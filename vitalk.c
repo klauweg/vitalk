@@ -19,13 +19,14 @@ void opentty(char *device)
    // because we don't want to get killed if linenoise sends CTRL-C.
    if ( ( fd_tty = open( device, O_RDWR | O_NOCTTY)) < 0 )
      {
-	fprintf( stderr, "Fehler beim oeffnen von %s: %s\n", device, strerror(errno));
+	fprintf( stderr, "Fehler beim Oeffnen von %s: %s\n", device, strerror(errno));
 	exit(1);
      }
 
    // termios Struktur "loeschen"
    bzero( &my_termios, sizeof(my_termios) );
    
+   // .. und konfigurieren:
    my_termios.c_iflag = IGNBRK | IGNPAR;
    my_termios.c_oflag = 0;
    my_termios.c_lflag = 0;
@@ -33,7 +34,11 @@ void opentty(char *device)
    my_termios.c_cc[VMIN] = 0;
    my_termios.c_cc[VTIME] = 50; // timeout fuer tty RX
      
-   tcsetattr(fd_tty, TCSAFLUSH, &my_termios);
+   if ( tcsetattr(fd_tty, TCSAFLUSH, &my_termios) < 0 )
+     {
+	fprintf( stderr, "Fehler beim Konfigurieren von %s: %s\n", device, strerror(errno));
+	exit(1);
+     }
    
    // DTR Leitung aktivieren:
    modemctl = 0;
