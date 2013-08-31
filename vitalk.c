@@ -51,6 +51,8 @@ void vito_init( void )
 {
    int trys;
    char rec;
+   const char initKw[] = { 0x04 };
+   const char initSeq[] = { 0x16, 0x00, 0x00 };
    
    trys = 5;
    fprintf( stderr, "Reset Communication to KW Proto." );
@@ -64,7 +66,7 @@ void vito_init( void )
 	trys--;
 	fprintf( stderr, "." );
 	tcflush( fd_tty, TCIOFLUSH );
-	write( fd_tty, 0x04, 1 );
+	write( fd_tty, initKw, 1 );
 	sleep( 1 );
 	tcflush( fd_tty, TCIFLUSH );
 	read( fd_tty, &rec, 1 );
@@ -73,7 +75,7 @@ void vito_init( void )
    fprintf( stderr, "Success.\n");
    
    fprintf( stderr, "Try Proto 300 Init: " );
-   write( fd_tty, { 0x16, 0x00, 0x00 }, 3 );
+   write( fd_tty, initSeq, 3 );
    read( fd_tty, &rec, 1 );
    if ( rec != 0x06 )
      {
@@ -86,7 +88,9 @@ void vito_init( void )
 
 void vito_close( void )
 {
-   write( fd_tty, 0x04, 1 );
+   const char initKw[] = { 0x04 };
+   
+   write( fd_tty, initKw, 1 );
 }
 
 
@@ -97,7 +101,8 @@ main()
 {
    opentty("/dev/ttyUSB0");
    vito_init();
-   sleep(3);
+   sleep(30);
+   vito_close();
 }
 
    
