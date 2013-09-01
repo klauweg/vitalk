@@ -288,6 +288,7 @@ int vito_read( int location, int size, unsigned char *vitomem )
   
   if (flag)
     {
+      fprintf( stderr, "Received Payload " );
       print_hex( result, result_len );
       bzero( vitomem, size );
       return -1;

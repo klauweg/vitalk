@@ -10,20 +10,45 @@
 // Globals:
 int frame_debug = 0;
 
+// Debug Ausgabe: Array als Hexadezimal:
+static int print_hex( unsigned char *buffer, int len )
+{
+  int i;
+  
+  for ( i = 0; i < len; i++ )
+    fprintf( stdout, " 0x%02x", buffer[i] );
+//  fprintf( stdout, "\n" );
+}
+                     
+
+
 main()
 {
+  int i, j;
+  
   unsigned char vitomem[20];
-  int res;
-   opentty("/dev/ttyUSB0");
-   vito_init();
+  opentty("/dev/ttyUSB0");
+  vito_init();
 
+      fprintf( stderr, "\n" );
   
-frame_debug = 1;
-  vito_read(0x5525, 1, vitomem);
-  res = vitomem[0] << 8;
-  res+= vitomem[1];
-  
-fprintf(stderr, "VITOMEM: %x\n", res);
+//  frame_debug = 1;
+  for ( i = 0x1000; i <= 0x5fff; i += 8 )
+    {
+      fprintf( stdout, "0x%04x:", i);
+      for ( j = 0; j <= 7; j++ )
+	{
+	  if ( vito_read(i+j, 1, vitomem) >= 0 )
+	    print_hex( vitomem, 1 );
+	  else
+	    fprintf( stdout, "  -- " );
+	}
+      fprintf( stdout, "\n" );
+    }
+//  res = vitomem[0] << 8;
+//  res+= vitomem[1];
+
+// fprintf(stderr, "VITOMEM: %x\n", res);
   
   vito_close();
   closetty();
