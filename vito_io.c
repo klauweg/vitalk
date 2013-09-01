@@ -123,7 +123,7 @@ static int calcCRC( unsigned char *buffer )
   return crc;
 }
 
-// Debug Ausgabe Array als Hexadezimal:
+// Debug Ausgabe: Array als Hexadezimal:
 static int print_hex( unsigned char *buffer, int len )
 {
   int i;
@@ -132,9 +132,6 @@ static int print_hex( unsigned char *buffer, int len )
   for ( i = 0; i < len; i++ )
     fprintf( stderr, " 0x%02x", buffer[i] );
   fprintf( stderr, "\n" );
-  // Beispiel:
-  // Senden 41 05 00 01 55 25 02 82
-  // Empfangen 06 41 07 01 01 55 25 02 07 01 8D
 }
 
 // Lowlevel Kommunikation mit der Vitodens:
@@ -180,31 +177,31 @@ static int vito_meeting( unsigned char *tx_data, int tx_data_len,
   // Got ACK?
   if ( read( fd_tty, &rec, 1 ) < 1 )
     {
-      fprintf( stderr, "No ACK on Transmission! (got nothing)\n" );
+      fprintf( stderr, "RCVD No ACK on Transmission! (got nothing)\n" );
       return -1;
     }
   if ( rec != 0x06 )
     {
-      fprintf( stderr, "No ACK on Transmission! (got 0x%02x)\n", rec );
+      fprintf( stderr, "RCVD No ACK on Transmission! (got 0x%02x)\n", rec );
       if ( rec == 0x15 )
-	fprintf( stderr, "CRC ERROR REPORTED (TX)!\n", rec );
+	fprintf( stderr, "CRC ERROR REPORTED BY VITODENS(TX)!\n", rec );
       return -1;
     }
   // Got Answer Frame Start?
   if ( read( fd_tty, &buffer[0], 1 ) < 1 )
     {
-      fprintf( stderr, "No Frame Start! (got nothing)\n" );
+      fprintf( stderr, "RCVD No Frame Start! (got nothing)\n" );
       return -1;
     }
   if ( buffer[0] != 0x41 )
     {
-      fprintf( stderr, "No Frame Start! (got 0x%02x)\n", buffer[0] );
+      fprintf( stderr, "RCVD No Frame Start! (got 0x%02x)\n", buffer[0] );
       return -1;
     }
   // Telegrammlänge empfangen:
   if ( read( fd_tty, &buffer[1], 1 ) < 1 )
     {
-      fprintf( stderr, "No Frame Size received!\n" );
+      fprintf( stderr, "RCVD No Frame Size!\n" );
       return -1;
     }
   rx_data_len = buffer[1];
@@ -236,24 +233,61 @@ static int vito_meeting( unsigned char *tx_data, int tx_data_len,
 }
     
 
-  
-  
-  
 // Speicherbereich von Vitodens anfragen:
-int vito_request( int location, int size, unsigned char *vitomem )
+int vito_read( int location, int size, unsigned char *vitomem )
 {
   unsigned char command[20];
-  int result;
+  unsigned char result[300];
+  int result_len;
   
-  // Hier wird das Anfragetelegramm gebastelt:
+  // Hier werden die Anfrage Nutzdaten gebastelt:
   command[0] = 0x00;    // Type of Message: Anfrage
   command[1] = 0x01;    // Lesezugriff
   command[2] = (location >> 8) & 0xff; // high byte
   command[3] = location & 0xff; // low byte
   command[4] = size;    // Anzahl der angeforderten Bytes
-  result = vito_meeting( command, 5, command );
-fprintf( stderr, "result: %d\n", result );
+  result_len = vito_meeting( command, 5, result );
   
+  // Fehler von der vito_meeting() Funktion
+  if ( result_len < 0 )
+    {
+      fprintf( stderr, "READ failed. (error in meeting)\n" );
+      return -1;
+    }
+  
+  if ( result_len != 5 + size)
+    {
+      fprintf( stderr, "Wrong RCVD Payload length!\n" );
+      return -1;
+    }
+  
+  if ( (command[2] != result[2]) && (command[3] != result[3]) )
+    {
+      fprintf( stderr, "Wrong Adress received!\n" );
+      return -1;
+    }
+
+  if ( result[0] != 0x01 )
+    {
+      fprintf( stderr, "Wrong Message Type received!\n" );
+      return -1;
+    }
+
+  if ( result[1] != 0x01 )
+    {
+      fprintf( stderr, "Wrong Access Type received!\n" );
+      return -1;
+    }
+  if ( command[4] != result[4] )
+    {
+      fprintf( stderr, "Wrong Memory Size received!\n" );
+      return -1;
+    }
+  
+  // Angefragten Speicherbereich aus der empfangenen Payload
+  // kopieren:
+  memcpy( vitomem, &result[5], size );
+  return 0;
 }
 
    
