@@ -6,8 +6,9 @@
 #include <fcntl.h>
 #include <string.h>
 
-// Filedescriptor für tty global:
-int fd_tty;
+// Globals:
+int fd_tty; // Filedescriptor serielle Schnittstelle
+int frame_debug = 0;
 
 // Keine Rückgabewerte. Wenns nicht geht wird sowieso beendet:
 void opentty(char *device)
@@ -98,16 +99,88 @@ void vito_close( void )
    write( fd_tty, initKw, 1 );
 }
 
+// CRC Berechnung
+int calcCRC( char *buffer )
+{
+  int crc = 0;
+  int i;
+  
+  for ( i = 1; i <= buffer[1] + 1; i++)
+    crc += buffer[i];
+    
+  crc &= 0xff;
+  
+  return crc;
+}
 
+// Debug Ausgabe für Telegramme:
+int t_print_hex( char *buffer )
+{
+  int i;
+  
+  fprintf( stderr, "Telegramm:" );
+  for ( i = 0; i <= buffer[1] + 2; i++ )
+    fprintf( stderr, " 0x%02x", buffer[i] );
+  fprintf( stderr, "\n" );
+  // Beispiel:
+  // Senden 41 05 00 01 55 25 02 82
+  // Empfangen 06 41 07 01 01 55 25 02 07 01 8D
+}
 
+// Speicherbereich von Vitodens anfragen:
+int vito_request( int location, int size, char *vitomem )
+{
+  char command[20];
+  char rec;
+  
+  // Hier wird das Anfragetelegramm gebastelt:
+  command[0] = 0x41;    // Start of Frame
+  command[1] = 1+1+2+1; // Länge ab ToM: ToM(1), R/W(1), Adresse(2), Anzahl(1) (ohne CRC)
+  command[2] = 0x00;    // Type of Message: Anfrage
+  command[3] = 0x01;    // Lesezugriff
+  command[4] = (location >> 8) & 0xff; // high byte
+  command[5] = location & 0xff; // low byte
+  command[6] = size;    // Anzahl der angeforderten Bytes
+  command[7] = calcCRC( command ); // CRC berechnen
 
+  // Debug output
+  if (frame_debug)
+    t_print_hex( command );
+
+  // Anfrage zur Vitodens senden:
+  tcflush( fd_tty, TCIOFLUSH );
+  if ( write( fd_tty, command, command[1]+3 ) <= 0 ) // payload + overhead
+    {
+      fprintf( stderr, "Write to tty failed.\n" );
+      return -1;
+    }
+
+  // ACK?
+  read( fd_tty, &rec, 1 );
+  if ( rec != 0x06 )
+    {
+      fprintf( stderr, "No ACK on Memory Request! (got %x)\n", rec );
+      return -1;
+    }
+
+  // Frame Start?
+  read( fd_tty, &rec, 1 );
+  if ( rec != 0x41 )
+    {
+      fprintf( stderr, "No Frame Start! (got %x)\n", rec );
+      return -1;
+    }
+
+}
 
 main()
 {
-   opentty("/dev/ttyUSB0");
-   vito_init();
-   sleep(30);
-   vito_close();
+  char vitomem[20];
+//   opentty("/dev/ttyUSB0");
+//   vito_init();
+//   sleep(30);
+//   vito_close();
+vito_request(0x5525, 2, vitomem);
 }
 
    
