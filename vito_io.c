@@ -117,7 +117,7 @@ static int calcCRC( unsigned char *buffer )
   
   for ( i = 1; i <= buffer[1] + 1; i++)
     crc += buffer[i];
-    
+
   crc &= 0xff;
   
   return crc;
@@ -187,7 +187,7 @@ static int vito_meeting( unsigned char *tx_data, int tx_data_len,
     {
       fprintf( stderr, "No ACK on Transmission! (got 0x%02x)\n", rec );
       if ( rec == 0x15 )
-	fprintf( stderr, "CRC ERROR REPORTED!\n", rec );
+	fprintf( stderr, "CRC ERROR REPORTED (TX)!\n", rec );
       return -1;
     }
   // Got Answer Frame Start?
@@ -224,8 +224,15 @@ static int vito_meeting( unsigned char *tx_data, int tx_data_len,
       print_hex( buffer, rx_data_len + 3 );
     }
   
-  fprintf( stderr, "CRC: %d\n", calcCRC( buffer ) );
-// hier fehlt noch was!
+  // CRC prüfen
+  if ( calcCRC(buffer) != buffer[rx_data_len + 2] )
+    {
+      fprintf( stderr, "Bad CRC on RX!\n" );
+      return -1;
+    }
+  
+  memcpy( rx_data, &buffer[2], rx_data_len );
+  return rx_data_len;
 }
     
 
@@ -245,7 +252,7 @@ int vito_request( int location, int size, unsigned char *vitomem )
   command[3] = location & 0xff; // low byte
   command[4] = size;    // Anzahl der angeforderten Bytes
   result = vito_meeting( command, 5, command );
-
+fprintf( stderr, "result: %d\n", result );
   
 }
 
