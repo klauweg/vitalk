@@ -253,7 +253,7 @@ int vito_read( int location, int size, unsigned char *vitomem )
   // Fehler von der vito_meeting() Funktion
   if ( result_len < 0 )
     {
-      fprintf( stderr, "READ failed. (error in meeting)\n" );
+      fprintf( stderr, "READ: failed. (error in meeting)\n" );
       bzero( vitomem, size );
       return -1;
     }
@@ -262,33 +262,33 @@ int vito_read( int location, int size, unsigned char *vitomem )
   flag = 0;
   if ( result_len != 5 + size)
     {
-      fprintf( stderr, "Wrong RCVD Payload length!\n" );
+      fprintf( stderr, "READ: Wrong RCVD Payload length!\n" );
       flag = 1;
     }
-  if ( (command[2] != result[2]) && (command[3] != result[3]) )
+  if ( (command[2] != result[2]) || (command[3] != result[3]) )
     {
-      fprintf( stderr, "Wrong Adress received!\n" );
+      fprintf( stderr, "READ: Wrong Adress received!\n" );
       flag = 1;
     }
   if ( result[0] != 0x01 )
     {
-      fprintf( stderr, "Wrong Message Type received!\n" );
+      fprintf( stderr, "READ: Wrong Message Type received!\n" );
       flag = 1;
     }
   if ( result[1] != 0x01 )
     {
-      fprintf( stderr, "Wrong Access Type received!\n" );
+      fprintf( stderr, "READ: Wrong Access Type received!\n" );
       flag = 1;
     }
   if ( command[4] != result[4] )
     {
-      fprintf( stderr, "Wrong Memory Size received!\n" );
+      fprintf( stderr, "READ: Wrong Memory Size received!\n" );
       flag = 1;
     }
   
   if (flag)
     {
-      fprintf( stderr, "Received Payload " );
+      fprintf( stderr, "READ: Received Payload " );
       print_hex( result, result_len );
       bzero( vitomem, size );
       return -1;
@@ -300,4 +300,68 @@ int vito_read( int location, int size, unsigned char *vitomem )
   return 0;
 }
 
-   
+// Speicherbereich an Vitodens schreiben:
+int vito_write( int location, int size, unsigned char *vitomem )
+{
+  unsigned char command[300];
+  unsigned char result[300];
+  int result_len;
+  int flag;
+
+  // Hier werden die Anfrage Nutzdaten gebastelt:
+  command[0] = 0x00;    // Type of Message: Anfrage
+  command[1] = 0x02;    // Schreibzugriff
+  command[2] = (location >> 8) & 0xff; // high byte Adresse
+  command[3] = location & 0xff; // low byte Adresse
+  command[4] = size;    // Anzahl der zu schreibenden Bytes
+  memcpy( &command[5], vitomem, size );
+  // vito_meeting liefert die in "result" übergebene
+  // Payload Länge zurück:
+  result_len = vito_meeting( command, 5 + size, result );
+  
+  // Fehler von der vito_meeting() Funktion
+  if ( result_len < 0 )
+    {
+      fprintf( stderr, "WRITE: failed. (error in meeting)\n" );
+      return -1;
+    }
+  
+  // Wir untersuchen die empfangene Payload auf plausibilität:
+  flag = 0;
+  if ( result_len != 5 + size)
+    {
+      fprintf( stderr, "WRITE: Wrong RCVD Payload length!\n" );
+      flag = 1;
+    }
+  if ( (command[2] != result[2]) || (command[3] != result[3]) )
+    {
+      fprintf( stderr, "WRITE: Wrong Adress received!\n" );
+      flag = 1;
+    }
+  if ( result[0] != 0x01 )
+    {
+      fprintf( stderr, "WRITE: Wrong Message Type received!\n" );
+      flag = 1;
+    }
+  if ( result[1] != 0x02 )
+    {
+      fprintf( stderr, "WRITE: Wrong Access Type received!\n" );
+      flag = 1;
+    }
+  if ( command[4] != result[4] )
+    {
+      fprintf( stderr, "WRITE: Wrong Memory Size received!\n" );
+      flag = 1;
+    }
+  
+  if (flag)
+    {
+      fprintf( stderr, "WRITE: Received Payload " );
+      print_hex( result, result_len );
+      return -1;
+    }
+  
+  return 0;
+}
+
+

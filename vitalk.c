@@ -33,7 +33,7 @@ main()
       fprintf( stderr, "\n" );
   
 //  frame_debug = 1;
-  for ( i = 0x1000; i <= 0x5fff; i += 8 )
+  for ( i = 0x6000; i <= 0xffff; i += 8 )
     {
       fprintf( stdout, "0x%04x:", i);
       for ( j = 0; j <= 7; j++ )
