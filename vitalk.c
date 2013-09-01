@@ -12,13 +12,17 @@ int frame_debug = 0;
 
 main()
 {
-  char vitomem[20];
-//   opentty("/dev/ttyUSB0");
-//   vito_init();
-//   sleep(30);
-//   vito_close();
+  unsigned char vitomem[20];
+   opentty("/dev/ttyUSB0");
+   vito_init();
+
+  
+  sleep(3);
 frame_debug = 1;
-vito_request(0x5525, 2, vitomem);
+  vito_request(0x5525, 2, vitomem);
+
+  vito_close();
+  closetty();
 }
 
    

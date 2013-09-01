@@ -7,7 +7,7 @@
 #include <string.h>
 
 // Globals:
-static int fd_tty; // Filedescriptor serielle Schnittstelle
+static int fd_tty = 0; // Filedescriptor serielle Schnittstelle
 extern int frame_debug;
 
 // Keine Rückgabewerte. Wenns nicht geht wird sowieso beendet:
@@ -62,9 +62,9 @@ void closetty( void )
 void vito_init( void )
 {
    int trys;
-   char rec;
-   const char initKw[] = { 0x04 };
-   const char initSeq[] = { 0x16, 0x00, 0x00 };
+   unsigned char rec;
+   const unsigned char initKw[] = { 0x04 };
+   const unsigned char initSeq[] = { 0x16, 0x00, 0x00 };
    
    trys = 5;
    fprintf( stderr, "Reset Communication to KW Proto." );
@@ -100,13 +100,13 @@ void vito_init( void )
 
 void vito_close( void )
 {
-   const char initKw[] = { 0x04 };
+   const unsigned char initKw[] = { 0x04 };
    
    write( fd_tty, initKw, 1 );
 }
 
 // CRC Berechnung
-static int calcCRC( char *buffer )
+static int calcCRC( unsigned char *buffer )
 {
   int crc = 0;
   int i;
@@ -120,12 +120,12 @@ static int calcCRC( char *buffer )
 }
 
 // Debug Ausgabe für Telegramme:
-static int t_print_hex( char *buffer )
+static int print_hex( unsigned char *buffer, int len )
 {
   int i;
   
   fprintf( stderr, "Telegramm:" );
-  for ( i = 0; i <= buffer[1] + 2; i++ )
+  for ( i = 0; i < len; i++ )
     fprintf( stderr, " 0x%02x", buffer[i] );
   fprintf( stderr, "\n" );
   // Beispiel:
@@ -134,11 +134,12 @@ static int t_print_hex( char *buffer )
 }
 
 // Speicherbereich von Vitodens anfragen:
-int vito_request( int location, int size, char *vitomem )
+int vito_request( int location, int size, unsigned char *vitomem )
 {
-  char command[20];
-  char rx_buffer[300];
-  char rec;
+  unsigned char command[20];
+  unsigned char rx_buffer[300];
+  unsigned char rec;
+  int result;
   
   // Hier wird das Anfragetelegramm gebastelt:
   command[0] = 0x41;    // Start of Frame
@@ -152,11 +153,18 @@ int vito_request( int location, int size, char *vitomem )
 
   // Debug output
   if (frame_debug)
-    t_print_hex( command );
+    print_hex( command, command[1]+3 );
 
+  // Zur Sicherheit:
+  if ( fd_tty == 0 )
+    {
+      fprintf( stderr, "No tty available!\n" );
+      return -1;
+    }
+  
   // Anfrage zur Vitodens senden:
   tcflush( fd_tty, TCIOFLUSH );
-  if ( write( fd_tty, command, command[1]+3 ) <= 0 ) // payload + overhead
+  if ( write( fd_tty, command, command[1]+3 ) < command[1]+3 ) // payload + overhead
     {
       fprintf( stderr, "Write to tty failed.\n" );
       return -1;
@@ -192,15 +200,16 @@ int vito_request( int location, int size, char *vitomem )
       fprintf( stderr, "No Frame Size received!\n" );
       return -1;
     }
-  if ( read( fd_tty, &rx_buffer[2], rx_buffer[1] + 1 ) < rx_buffer[1] + 1 ) // (+ CRC!)
+  if ( (result = read( fd_tty, &rx_buffer[2], rx_buffer[1] + 1 )) < rx_buffer[1] + 1 ) // (+ CRC!)
     {
-      fprintf( stderr, "Answer Frame too short!\n" );
+      fprintf( stderr, "Answer Frame too short! (got %d additional bytes):\n", result );
+      print_hex( rx_buffer, result + 2 ); // Rest + Start of Frame + Len of Frame
       return -1;
     }
   
   // Debug output
   if (frame_debug)
-    t_print_hex( rx_buffer );
+    print_hex( rx_buffer, rx_buffer[1] + 3 );
   
 }
 
