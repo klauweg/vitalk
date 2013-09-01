@@ -224,7 +224,8 @@ static int vito_meeting( unsigned char *tx_data, int tx_data_len,
   // CRC prüfen
   if ( calcCRC(buffer) != buffer[rx_data_len + 2] )
     {
-      fprintf( stderr, "Bad CRC on RX!\n" );
+      fprintf( stderr, "Bad CRC on RX: " );
+      print_hex( buffer, rx_data_len + 3 );
       return -1;
     }
   
@@ -239,6 +240,7 @@ int vito_read( int location, int size, unsigned char *vitomem )
   unsigned char command[20];
   unsigned char result[300];
   int result_len;
+  int flag;
   
   // Hier werden die Anfrage Nutzdaten gebastelt:
   command[0] = 0x00;    // Type of Message: Anfrage
@@ -252,35 +254,42 @@ int vito_read( int location, int size, unsigned char *vitomem )
   if ( result_len < 0 )
     {
       fprintf( stderr, "READ failed. (error in meeting)\n" );
+      bzero( vitomem, size );
       return -1;
     }
   
+  // Wir untersuchen die empfangene Payload auf plausibilität:
+  flag = 0;
   if ( result_len != 5 + size)
     {
       fprintf( stderr, "Wrong RCVD Payload length!\n" );
-      return -1;
+      flag = 1;
     }
-  
   if ( (command[2] != result[2]) && (command[3] != result[3]) )
     {
       fprintf( stderr, "Wrong Adress received!\n" );
-      return -1;
+      flag = 1;
     }
-
   if ( result[0] != 0x01 )
     {
       fprintf( stderr, "Wrong Message Type received!\n" );
-      return -1;
+      flag = 1;
     }
-
   if ( result[1] != 0x01 )
     {
       fprintf( stderr, "Wrong Access Type received!\n" );
-      return -1;
+      flag = 1;
     }
   if ( command[4] != result[4] )
     {
       fprintf( stderr, "Wrong Memory Size received!\n" );
+      flag = 1;
+    }
+  
+  if (flag)
+    {
+      print_hex( result, result_len );
+      bzero( vitomem, size );
       return -1;
     }
   

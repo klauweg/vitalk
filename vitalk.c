@@ -19,7 +19,7 @@ main()
 
   
 frame_debug = 1;
-  vito_read(0x5525, 2, vitomem);
+  vito_read(0x5525, 1, vitomem);
   res = vitomem[0] << 8;
   res+= vitomem[1];
   
