@@ -193,7 +193,7 @@ int vito_request( int location, int size, unsigned char *vitomem )
       fprintf( stderr, "No Frame Start! (got %x)\n", rx_buffer[0] );
       return -1;
     }
-  
+sleep(1);  
   // Rest des Telegramms empfangen:
   if ( read( fd_tty, &rx_buffer[1], 1 ) < 1 ) // Hier empfangen wir die länge des Telegramms
     {
