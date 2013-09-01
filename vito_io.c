@@ -156,8 +156,11 @@ static int vito_meeting( unsigned char *tx_data, int tx_data_len,
 
   // Debug output
   if (frame_debug)
-    print_hex( buffer, tx_data_len+3 );
-
+    {
+      fprintf( stderr, "TX: " );
+      print_hex( buffer, tx_data_len+3 );
+    }
+  
   // Zur Sicherheit:
   if ( fd_tty == 0 )
     {
@@ -167,7 +170,7 @@ static int vito_meeting( unsigned char *tx_data, int tx_data_len,
   
   //////////// Anfrage zur Vitodens senden:
   tcflush( fd_tty, TCIOFLUSH );
-  if ( write( fd_tty, command, tx_data_len+3 ) < tx_data_len+3 ) // payload + overhead
+  if ( write( fd_tty, buffer, tx_data_len+3 ) < tx_data_len+3 ) // payload + overhead
     {
       fprintf( stderr, "Write to tty failed.\n" );
       return -1;
@@ -182,7 +185,9 @@ static int vito_meeting( unsigned char *tx_data, int tx_data_len,
     }
   if ( rec != 0x06 )
     {
-      fprintf( stderr, "No ACK on Transmission! (got %x)\n", rec );
+      fprintf( stderr, "No ACK on Transmission! (got 0x%02x)\n", rec );
+      if ( rec == 0x15 )
+	fprintf( stderr, "CRC ERROR REPORTED!\n", rec );
       return -1;
     }
   // Got Answer Frame Start?
@@ -193,7 +198,7 @@ static int vito_meeting( unsigned char *tx_data, int tx_data_len,
     }
   if ( buffer[0] != 0x41 )
     {
-      fprintf( stderr, "No Frame Start! (got %x)\n", buffer[0] );
+      fprintf( stderr, "No Frame Start! (got 0x%02x)\n", buffer[0] );
       return -1;
     }
   // Telegrammlänge empfangen:
@@ -204,18 +209,22 @@ static int vito_meeting( unsigned char *tx_data, int tx_data_len,
     }
   rx_data_len = buffer[1];
   // Payload + CRC empfangen:
-  for ( i = 0; i <= rx_data_len; i++ )
+  for ( i = 0; i < rx_data_len+1; i++ )
     if ( read( fd_tty, &buffer[i+2], 1 ) < 1 )
       {
-        fprintf( stderr, "Answer Frame too short! (received %d bytes of %d expected):\n", i, rx_data_len+1 );
+        fprintf( stderr, "Answer Frame too short! (received %d bytes of %d expected)\n", i, rx_data_len+1 );
 	print_hex( buffer, i+2 );
 	return -1;
       }
 
   // Debug output
   if (frame_debug)
-    print_hex( rx_buffer, rx_data_len + 3 );
+    {
+      fprintf( stderr, "RX: " );
+      print_hex( buffer, rx_data_len + 3 );
+    }
   
+  fprintf( stderr, "CRC: %d\n", calcCRC( buffer ) );
 // hier fehlt noch was!
 }
     
