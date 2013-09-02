@@ -399,3 +399,56 @@ char * read_VL_soll_temp( void )
   return valuestr;
 }
 
+char * read_raum_soll_temp( void)
+{
+  unsigned char content[1];
+  static char valuestr[20];
+  
+  if ( vito_read(0x2306, 1, content) < 0 )
+    sprintf( valuestr, "NULL" );
+  else
+    sprintf( valuestr, "%u", content[0] );
+
+  return valuestr;
+}
+
+int write_raum_soll_temp( int temp )
+{
+  unsigned char content[1];
+  
+  if ( temp < 10 || temp > 30 )
+    {
+      fprintf( stderr, "Raum_soll_temp: range exceeded!\n");
+      return -1;
+    }
+  
+  content[0] = temp & 0xff; // unnötig, aber deutlicher
+  return vito_write(0x2306, 1, content);
+}
+
+char * read_red_raum_soll_temp( void)
+{
+  unsigned char content[1];
+  static char valuestr[20];
+  
+  if ( vito_read(0x2307, 1, content) < 0 )
+    sprintf( valuestr, "NULL" );
+  else
+    sprintf( valuestr, "%u", content[0] );
+
+  return valuestr;
+}
+
+int write_red_raum_soll_temp( int temp )
+{
+  unsigned char content[1];
+  
+  if ( temp < 10 || temp > 30 )
+    {
+      fprintf( stderr, "Raum_soll_temp: range exceeded!\n");
+      return -1;
+    }
+  
+  content[0] = temp & 0xff; // unnötig, aber deutlicher
+  return vito_write(0x2307, 1, content);
+}

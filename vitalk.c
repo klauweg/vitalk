@@ -75,6 +75,8 @@ for(;;)
 
   printf("HEIZKREIS:\n");
   printf("Heizkreis Vorlaufsolltemperatur: %s °C\n", read_VL_soll_temp() );
+  printf("Heizkreis Raum Solltemperatur: %s °C\n", read_raum_soll_temp() );
+  printf("Heizkreis Reduzierte Raum Solltemperatur: %s °C\n", read_red_raum_soll_temp() );
 
       sleep(1);
     }
