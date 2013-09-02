@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <signal.h>
+#include <unistd.h>
 #include "vito_io.h"
 #include "vito_parameter.h"
 
@@ -56,8 +57,11 @@ int main()
   printf("Ventilstellung Numerisch: %s\n", read_ventil_numeric() );
   printf("Ventilstellung: %s\n", read_ventil() );
 
-  printf("Betriebsmodus: %s\n", read_mode_numeric() );
+  printf("Betriebsmodus Numerisch: %s\n", read_mode_numeric() );
+  printf("Betriebsmodus: %s\n", read_mode() );
 
+  printf("Heizkreis Vorlaufsolltemperatur: %s °C\n", read_VL_soll_temp() );
+  printf("Pumpe: %s\n", read_pump_power() );
 //  write_WW_soll_temp( 39 );
   
   vito_close();

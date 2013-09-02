@@ -1,6 +1,8 @@
 
 // ALLGEMEIN
 char * read_deviceid( void );
+char * read_mode_numeric( void );
+char * read_mode( void );
 
 // KESSEL
 char * read_K_abgas_temp( void ); // °C
@@ -28,6 +30,7 @@ char * read_power( void ); // Leistung in %
 // HYDRAULIK
 char * read_ventil_numeric( void );
 char * read_ventil( void );
+char * read_pump_power( void );
 
 // HEIZKREIS
-char * read_mode_numeric( void );
+char * read_VL_soll_temp( void );

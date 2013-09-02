@@ -30,6 +30,43 @@ char * read_deviceid( void )
   return valuestr;
 }
 
+char * read_mode_numeric( void )
+{
+  unsigned char content[1];
+  static char valuestr[20];
+  
+  if ( vito_read(0x2323, 1, content) < 0 )
+    sprintf( valuestr, "NULL" );
+  else
+    sprintf( valuestr, "%u", content[0] );
+
+  return valuestr;
+}
+
+char * read_mode( void )
+{
+  unsigned char content[1];
+  static char valuestr[30];
+  
+  if ( vito_read(0x2323, 1, content) < 0 )
+    sprintf( valuestr, "NULL" );
+  else
+    {
+      switch (content[0])
+	{
+	case 0: strcpy( valuestr, "Abschaltbetrieb" );
+	  break;
+	case 1: strcpy( valuestr, "Nur Warmwasser" );
+	  break;
+	case 2: strcpy( valuestr, "Heizen und Warmwasser" );
+	  break;
+	default: sprintf( valuestr, "UNKNOWN: %u", content[0] );
+	  break;
+	}
+    }
+  return valuestr;
+}
+
 //////////////////// KESSEL
 char * read_K_abgas_temp( void )
 {
@@ -316,20 +353,37 @@ char * read_ventil( void )
   return valuestr;
 }
 
-
-
-  
-/////////////////// HEIZKREIS
-char * read_mode_numeric( void )
+char * read_pump_power( void )
 {
   unsigned char content[1];
   static char valuestr[20];
+  float value;
   
-  if ( vito_read(0x2323, 1, content) < 0 )
+  if ( vito_read(0x7660, 1, content) < 0 )
     sprintf( valuestr, "NULL" );
   else
-    sprintf( valuestr, "%u", content[0] );
+    {
+      value = content[0] / 2.0;
+      sprintf( valuestr, "%3.1f", value );
+    }
+  return valuestr;
+}
 
+/////////////////// HEIZKREIS
+char * read_VL_soll_temp( void )
+{
+  unsigned char content[2];
+  static char valuestr[20];
+  float value;
+  
+  if ( vito_read(0x2544, 2, content) < 0 )
+    sprintf( valuestr, "NULL" );
+  else
+    {
+      value = (content[1] << 8) + content[0];
+      value = value / 10;
+      sprintf( valuestr, "%3.2f", value );
+    }
   return valuestr;
 }
 
@@ -338,21 +392,7 @@ char * read_mode_numeric( void )
 getDrehzahlSollPInt 0a3c pc 1
 getStatusPIntern 7660 E_ST 1
 getDrehzahlPIntern 7660 PC 1 ???
-
-  
-      <unit name='Betriebsart' > 0x2323
-        <abbrev>E_BA4</abbrev>
-        <type>enum</type>
-        <enum bytes='00' text='Abschalt'/>
-        <enum bytes='01' text='Nur WW'/>
-        <enum bytes='02' text='Heizen und WW'/>
-        <enum bytes='03' text='Dauernd Reduziert'/>
-        <enum bytes='04' text='Dauernd Normal'/>
-        <enum text='UNKNOWN'/>
   
 
 
-getTempSollVL_A1M1 2544 td 2
-
- 
 #endif
