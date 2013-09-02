@@ -24,3 +24,10 @@ char * read_outdoor_temp( void ); // °C
 char * read_starts( void ); // Zähler
 char * read_runtime( void ); // Laufzeit in Sekunden
 char * read_power( void ); // Leistung in %
+
+// HYDRAULIK
+char * read_ventil_numeric( void );
+char * read_ventil( void );
+
+// HEIZKREIS
+char * read_mode_numeric( void );

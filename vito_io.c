@@ -107,7 +107,10 @@ void vito_init( void )
 void vito_close( void )
 {
    const unsigned char initKw[] = { 0x04 };
-   
+
+  // Hier etwas unklar wie man sich verhalten soll wenn der
+  // Abbruch mitten in einer Telegrammübertragung erfolgt.
+  // Etwas warten kann jedenfalls nicht schaden.
    write( fd_tty, initKw, 1 );
 }
 

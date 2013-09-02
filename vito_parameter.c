@@ -276,20 +276,82 @@ char * read_power( void )
   return valuestr;
 }
 
+/////////////////// HYDRAULIK
+char * read_ventil_numeric( void )
+{
+  unsigned char content[1];
+  static char valuestr[20];
+  
+  if ( vito_read(0x0a10, 1, content) < 0 )
+    sprintf( valuestr, "NULL" );
+  else
+    sprintf( valuestr, "%u", content[0] );
+
+  return valuestr;
+}
+
+char * read_ventil( void )
+{
+  unsigned char content[1];
+  static char valuestr[30];
+  
+  if ( vito_read(0x0a10, 1, content) < 0 )
+    sprintf( valuestr, "NULL" );
+  else
+    {
+      switch (content[0])
+	{
+	case 0: strcpy( valuestr, "undefiniert" );
+	  break;
+	case 1: strcpy( valuestr, "Heizkreis" );
+	  break;
+	case 2: strcpy( valuestr, "Mittelstellung" );
+	  break;
+	case 3: strcpy( valuestr, "Warmwasserbereitung" );
+	  break;
+	default: sprintf( valuestr, "UNKNOWN: %u", content[0] );
+	  break;
+	}
+    }
+  return valuestr;
+}
+
+
+
+  
+/////////////////// HEIZKREIS
+char * read_mode_numeric( void )
+{
+  unsigned char content[1];
+  static char valuestr[20];
+  
+  if ( vito_read(0x2323, 1, content) < 0 )
+    sprintf( valuestr, "NULL" );
+  else
+    sprintf( valuestr, "%u", content[0] );
+
+  return valuestr;
+}
 
 
 #if 0
-
-getStatusFlamme 55d3 B_STF 1
-getVerriegelung 55d3 B_STV 1
-
-/////////////////// VENTILE UND RELAIS
-getStatusUmschaltVentil 0a10 E_STUV2 1
-
-
 getDrehzahlSollPInt 0a3c pc 1
 getStatusPIntern 7660 E_ST 1
 getDrehzahlPIntern 7660 PC 1 ???
+
+  
+      <unit name='Betriebsart' > 0x2323
+        <abbrev>E_BA4</abbrev>
+        <type>enum</type>
+        <enum bytes='00' text='Abschalt'/>
+        <enum bytes='01' text='Nur WW'/>
+        <enum bytes='02' text='Heizen und WW'/>
+        <enum bytes='03' text='Dauernd Reduziert'/>
+        <enum bytes='04' text='Dauernd Normal'/>
+        <enum text='UNKNOWN'/>
+  
+
+
 getTempSollVL_A1M1 2544 td 2
 
  

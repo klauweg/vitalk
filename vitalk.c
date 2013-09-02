@@ -5,26 +5,28 @@
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include <string.h>
+#include <signal.h>
 #include "vito_io.h"
 #include "vito_parameter.h"
 
 // Globals:
 extern int frame_debug;
 
-// Debug Ausgabe: Array als Hexadezimal:
-static void print_hex( unsigned char *buffer, int len )
+// Signal Handler:
+void exit_handler( int num )
 {
-  int i;
-  
-  for ( i = 0; i < len; i++ )
-    fprintf( stdout, " 0x%02x", buffer[i] );
-//  fprintf( stdout, "\n" );
+  fprintf(stderr, "Abort caught, closing I/O Channels....\n" );
+  sleep(5);
+  vito_close();
+  closetty();
+  exit( num );
 }
-                     
-
 
 int main()
 {
+  signal(SIGINT, exit_handler);
+  signal(SIGHUP, exit_handler);
+  
   opentty("/dev/ttyUSB0");
   vito_init();
 
@@ -50,7 +52,12 @@ int main()
   printf("Brennerstarts: %s\n", read_starts() );
   printf("Brennerlaufzeit: %s s\n", read_runtime() );
   printf("Brennerleistung: %s %%\n", read_power() );
-  
+
+  printf("Ventilstellung Numerisch: %s\n", read_ventil_numeric() );
+  printf("Ventilstellung: %s\n", read_ventil() );
+
+  printf("Betriebsmodus: %s\n", read_mode_numeric() );
+
 //  write_WW_soll_temp( 39 );
   
   vito_close();
@@ -59,4 +66,3 @@ int main()
   return 0;
 }
 
-   
