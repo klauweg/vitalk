@@ -43,6 +43,21 @@ char * read_mode_numeric( void )
   return valuestr;
 }
 
+int write_mode_numeric( int mode )
+{
+  unsigned char content[1];
+  
+  // Dauernd reduziert und dauernd normal unterstützt meine Vitodens offenbar nicht
+  if ( mode < 0 || mode > 2 )
+    {
+      fprintf( stderr, "Illegal Mode!\n");
+      return -1;
+    }
+  
+  content[0] = mode & 0xff; // unnötig, aber deutlicher
+  return vito_write(0x2323, 1, content);
+}
+
 char * read_mode( void )
 {
   unsigned char content[1];
@@ -357,15 +372,12 @@ char * read_pump_power( void )
 {
   unsigned char content[1];
   static char valuestr[20];
-  float value;
   
-  if ( vito_read(0x7660, 1, content) < 0 )
+  if ( vito_read(0x0a3c, 1, content) < 0 )
     sprintf( valuestr, "NULL" );
   else
-    {
-      value = content[0] / 2.0;
-      sprintf( valuestr, "%3.1f", value );
-    }
+    sprintf( valuestr, "%u", content[0] );
+
   return valuestr;
 }
 
@@ -387,12 +399,3 @@ char * read_VL_soll_temp( void )
   return valuestr;
 }
 
-
-#if 0
-getDrehzahlSollPInt 0a3c pc 1
-getStatusPIntern 7660 E_ST 1
-getDrehzahlPIntern 7660 PC 1 ???
-  
-
-
-#endif

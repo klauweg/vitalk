@@ -2,6 +2,7 @@
 // ALLGEMEIN
 char * read_deviceid( void );
 char * read_mode_numeric( void );
+int write_mode_numeric( int mode );
 char * read_mode( void );
 
 // KESSEL
