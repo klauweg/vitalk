@@ -5,6 +5,7 @@
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include <string.h>
+#include <unistd.h>
 
 // Globals:
 static int fd_tty = 0; // Filedescriptor serielle Schnittstelle
@@ -125,7 +126,7 @@ static int calcCRC( unsigned char *buffer )
 }
 
 // Debug Ausgabe: Array als Hexadezimal:
-static int print_hex( unsigned char *buffer, int len )
+static void print_hex( unsigned char *buffer, int len )
 {
   int i;
   
@@ -185,7 +186,7 @@ static int vito_meeting( unsigned char *tx_data, int tx_data_len,
     {
       fprintf( stderr, "RCVD No ACK on Transmission! (got 0x%02x)\n", rec );
       if ( rec == 0x15 )
-	fprintf( stderr, "CRC ERROR REPORTED BY VITODENS(TX)!\n", rec );
+	fprintf( stderr, "CRC ERROR REPORTED BY VITODENS(TX)!\n" );
       return -1;
     }
   // Got Answer Frame Start?
@@ -333,7 +334,7 @@ int vito_write( int location, int size, unsigned char *vitomem )
   
   // Wir untersuchen die empfangene Payload auf plausibilität:
   flag = 0;
-  if ( result_len != 5 + size)
+  if ( result_len != 5 )
     {
       fprintf( stderr, "WRITE: Wrong RCVD Payload length!\n" );
       flag = 1;

@@ -10,10 +10,9 @@
 
 // Globals:
 extern int frame_debug;
-extern struct vito_parameter parameter_list[];
 
 // Debug Ausgabe: Array als Hexadezimal:
-static int print_hex( unsigned char *buffer, int len )
+static void print_hex( unsigned char *buffer, int len )
 {
   int i;
   
@@ -24,41 +23,40 @@ static int print_hex( unsigned char *buffer, int len )
                      
 
 
-main()
+int main()
 {
-  int i;
-  char buffer[20];
   opentty("/dev/ttyUSB0");
   vito_init();
 
   fprintf( stderr, "\n" );
   
-  frame_debug = 1;
+//  frame_debug = 1;
 
-  i=0;
-  while ( parameter_list[i].name[0] )
-    {
-      printf("%s: ", parameter_list[i].description );
-      parameter_list[i].readValue( buffer );
-      printf("%s %s\n",buffer,parameter_list[i].unit);
-      i++;
-    };
+  printf("Device Id: %s\n", read_deviceid() );
+  printf("Kessel ist Temperatur: %s °C\n", read_K_ist_temp() );
+  printf("Kessel ist Temperatur Tiefpass: %s °C\n", read_K_istTP_temp() );
+  printf("Kessel Soll Temperatur: %s °C\n", read_K_soll_temp() );
+  printf("Kessel Abgastemperatur: %s °C\n", read_K_abgas_temp() );
   
-//  read_WW_soll_temp( buffer );
-//  fprintf( stdout, "Warmwasser: %s\n", buffer );
-//  read_abgas_temp( buffer );
-//  fprintf( stdout, "Abgas: %s\n", buffer );
-//  read_deviceid( buffer );
-//  fprintf( stdout, "Device: %s\n", buffer );
+  printf("Warmwasser Solltemperatur: %s °C\n", read_WW_soll_temp() );
+  printf("Warmwasser Vorlaufoffset: %s K\n", read_WW_offset() );
+  printf("Warmwasser ist Temperatur Tiefpass: %s °C\n", read_WW_istTP_temp() );
+  printf("Warmwasser ist Temperatur: %s °C\n", read_WW_ist_temp() );
+  
+  printf("Aussentemperatur ist: %s °C\n", read_outdoor_temp() );
+  printf("Aussentemperatur ist Tiefpass: %s °C\n", read_outdoor_TP_temp() );
+  printf("Aussentemperatur ist gedämpft: %s °C\n", read_outdoor_smooth_temp() );
 
-//  res = vitomem[0] << 8;
-//  res+= vitomem[1];
-
-// fprintf(stderr, "VITOMEM: %x\n", res);
-
+  printf("Brennerstarts: %s\n", read_starts() );
+  printf("Brennerlaufzeit: %s s\n", read_runtime() );
+  printf("Brennerleistung: %s %%\n", read_power() );
+  
+//  write_WW_soll_temp( 39 );
   
   vito_close();
   closetty();
+  
+  return 0;
 }
 
    
