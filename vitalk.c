@@ -24,31 +24,26 @@ static int print_hex( unsigned char *buffer, int len )
 
 main()
 {
-  int i, j;
-  
-  unsigned char vitomem[20];
+  char buffer[20];
   opentty("/dev/ttyUSB0");
   vito_init();
 
-      fprintf( stderr, "\n" );
+  fprintf( stderr, "\n" );
   
-//  frame_debug = 1;
-  for ( i = 0x6000; i <= 0xffff; i += 8 )
-    {
-      fprintf( stdout, "0x%04x:", i);
-      for ( j = 0; j <= 7; j++ )
-	{
-	  if ( vito_read(i+j, 1, vitomem) >= 0 )
-	    print_hex( vitomem, 1 );
-	  else
-	    fprintf( stdout, "  -- " );
-	}
-      fprintf( stdout, "\n" );
-    }
+  frame_debug = 1;
+
+  read_WW_soll_temp( buffer );
+  fprintf( stdout, "Warmwasser: %s\n", buffer );
+  read_abgas_temp( buffer );
+  fprintf( stdout, "Abgas: %s\n", buffer );
+  read_deviceid( buffer );
+  fprintf( stdout, "Device: %s\n", buffer );
+
 //  res = vitomem[0] << 8;
 //  res+= vitomem[1];
 
 // fprintf(stderr, "VITOMEM: %x\n", res);
+
   
   vito_close();
   closetty();
