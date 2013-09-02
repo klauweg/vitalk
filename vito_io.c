@@ -8,7 +8,8 @@
 
 // Globals:
 static int fd_tty = 0; // Filedescriptor serielle Schnittstelle
-extern int frame_debug;
+static int errorcount = 0; // Abbruch bei zu häufigen Fehlern
+int frame_debug = 0;
 
 // Keine Rückgabewerte. Wenns nicht geht wird sowieso beendet:
 void opentty(char *device)
@@ -255,6 +256,7 @@ int vito_read( int location, int size, unsigned char *vitomem )
     {
       fprintf( stderr, "READ: failed. (error in meeting)\n" );
       bzero( vitomem, size );
+      if ( errorcount++ > 10 ) exit(2);
       return -1;
     }
   
@@ -291,12 +293,14 @@ int vito_read( int location, int size, unsigned char *vitomem )
       fprintf( stderr, "READ: Received Payload " );
       print_hex( result, result_len );
       bzero( vitomem, size );
+      if ( errorcount++ > 10 ) exit(2);
       return -1;
     }
   
   // Angefragten Speicherbereich aus der empfangenen Payload
   // kopieren:
   memcpy( vitomem, &result[5], size );
+  errorcount = 0;
   return 0;
 }
 
@@ -323,6 +327,7 @@ int vito_write( int location, int size, unsigned char *vitomem )
   if ( result_len < 0 )
     {
       fprintf( stderr, "WRITE: failed. (error in meeting)\n" );
+      if ( errorcount++ > 10 ) exit(2);
       return -1;
     }
   
@@ -358,9 +363,11 @@ int vito_write( int location, int size, unsigned char *vitomem )
     {
       fprintf( stderr, "WRITE: Received Payload " );
       print_hex( result, result_len );
+      if ( errorcount++ > 10 ) exit(2);
       return -1;
     }
-  
+
+  errorcount = 0;
   return 0;
 }
 
