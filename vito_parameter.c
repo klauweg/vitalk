@@ -32,14 +32,21 @@ static void interpret_int16_t( uint8_t *content )
 
   sprintf( valuestr, "%3.2f", value / 10.0 );
 }
-    
+
+// Bequemlichkeit: valuestr. für sql Kompatibilität =NULL setzen
+static void make_null( void )
+{
+  sprintf( valuestr, "NULL" );
+}
+
 // Hier folgt pro Parameter eine C-Funktion:
 // Rückgabewert bei den Lesefunktionen ist ein Pointer
 // auf ein char-array mit dem Ergebnistext.
 /////////////////// ALLGEMEIN
 char * read_deviceid( void )
 {
-  if ( vito_read(0x00f8, 2, content) < 0 ) sprintf( valuestr, "NULL" );
+  if ( vito_read(0x00f8, 2, content) < 0 )
+    make_null();
   else
     {
       // Normalerweise sind die Parameter in Little Endian
@@ -52,7 +59,8 @@ char * read_deviceid( void )
 
 char * read_mode_numeric( void )
 {
-  if ( vito_read(0x2323, 1, content) < 0 ) sprintf( valuestr, "NULL" );
+  if ( vito_read(0x2323, 1, content) < 0 )
+    make_null();
   else
     sprintf( valuestr, "%u", content[0] );
   return valuestr;
@@ -73,7 +81,8 @@ int write_mode_numeric( int mode )
 
 char * read_mode( void )
 {
-  if ( vito_read(0x2323, 1, content) < 0 ) sprintf( valuestr, "NULL" );
+  if ( vito_read(0x2323, 1, content) < 0 )
+    make_null();
   else
     {
       switch (content[0])
@@ -95,7 +104,7 @@ char * read_mode( void )
 char * read_K_abgas_temp( void )
 {
   if ( vito_read(0x0808, 2, content) < 0 )
-    sprintf( valuestr, "NULL" );
+    make_null();
   else
     interpret_int16_t( content );
   return valuestr;
@@ -104,7 +113,7 @@ char * read_K_abgas_temp( void )
 char * read_K_ist_temp( void )
 {
   if ( vito_read(0x0802, 2, content) < 0 )
-    sprintf( valuestr, "NULL" );
+    make_null();
   else
     interpret_int16_t( content );
   return valuestr;
@@ -113,7 +122,7 @@ char * read_K_ist_temp( void )
 char * read_K_istTP_temp( void )
 {
   if ( vito_read(0x0810, 2, content) < 0 )
-    sprintf( valuestr, "NULL" );
+    make_null();
   else
     interpret_int16_t( content );
   return valuestr;
@@ -122,7 +131,7 @@ char * read_K_istTP_temp( void )
 char * read_K_soll_temp( void )
 {
   if ( vito_read(0x555a, 2, content) < 0 )
-    sprintf( valuestr, "NULL" );
+    make_null();
   else
     interpret_int16_t( content );
   return valuestr;
@@ -132,7 +141,7 @@ char * read_K_soll_temp( void )
 char * read_WW_soll_temp( void)
 {
   if ( vito_read(0x6300, 1, content) < 0 )
-    sprintf( valuestr, "NULL" );
+    make_null();
   else
     sprintf( valuestr, "%u", content[0] );
 
@@ -154,7 +163,7 @@ int write_WW_soll_temp( int temp )
 char * read_WW_offset( void )
 {
   if ( vito_read(0x6760, 1, content) < 0 )
-    sprintf( valuestr, "NULL" );
+    make_null();
   else
     sprintf( valuestr, "%u", content[0] );
 
@@ -164,7 +173,7 @@ char * read_WW_offset( void )
 char * read_WW_istTP_temp( void )
 {
   if ( vito_read(0x0812, 2, content) < 0 )
-    sprintf( valuestr, "NULL" );
+    make_null();
   else
     interpret_int16_t( content );
   
@@ -174,7 +183,7 @@ char * read_WW_istTP_temp( void )
 char * read_WW_ist_temp( void )
 {
   if ( vito_read(0x0804, 2, content) < 0 )
-    sprintf( valuestr, "NULL" );
+    make_null();
   else
     interpret_int16_t( content );
   return valuestr;
@@ -185,7 +194,7 @@ char * read_WW_ist_temp( void )
 char * read_outdoor_TP_temp( void )
 {
   if ( vito_read(0x5525, 2, content) < 0 )
-    sprintf( valuestr, "NULL" );
+    make_null();
   else
     interpret_int16_t( content );
   return valuestr;
@@ -194,7 +203,7 @@ char * read_outdoor_TP_temp( void )
 char * read_outdoor_smooth_temp( void )
 {
   if ( vito_read(0x5527, 2, content) < 0 )
-    sprintf( valuestr, "NULL" );
+    make_null();
   else
     interpret_int16_t( content );
   return valuestr;
@@ -203,7 +212,7 @@ char * read_outdoor_smooth_temp( void )
 char * read_outdoor_temp( void )
 {
   if ( vito_read(0x0800, 2, content) < 0 )
-    sprintf( valuestr, "NULL" );
+    make_null();
   else
     interpret_int16_t( content );
   return valuestr;
@@ -214,7 +223,8 @@ char * read_starts( void )
 {
   unsigned int value;
   
-  if ( vito_read(0x088A, 4, content) < 0 ) sprintf( valuestr, "NULL" );
+  if ( vito_read(0x088A, 4, content) < 0 )
+    make_null();
   else
     {
       value = content[0] + (content[1] << 8) + (content[2] << 16) + (content[3] << 24);
@@ -227,7 +237,8 @@ char * read_runtime( void )
 {
   unsigned int value;
   
-  if ( vito_read(0x0886, 4, content) < 0 ) sprintf( valuestr, "NULL" );
+  if ( vito_read(0x0886, 4, content) < 0 )
+    make_null();
   else
     {
       value = content[0] + (content[1] << 8) + (content[2] << 16) + (content[3] << 24);
@@ -239,7 +250,7 @@ char * read_runtime( void )
 char * read_power( void )
 {
   if ( vito_read(0xa38f, 1, content) < 0 )
-    sprintf( valuestr, "NULL" );
+    make_null();
   else
     sprintf( valuestr, "%3.1f", content[0] / 2.0 );
 
@@ -250,7 +261,7 @@ char * read_power( void )
 char * read_ventil_numeric( void )
 {
   if ( vito_read(0x0a10, 1, content) < 0 )
-    sprintf( valuestr, "NULL" );
+    make_null();
   else
     sprintf( valuestr, "%u", content[0] );
 
@@ -260,7 +271,7 @@ char * read_ventil_numeric( void )
 char * read_ventil( void )
 {
   if ( vito_read(0x0a10, 1, content) < 0 )
-    sprintf( valuestr, "NULL" );
+    make_null();
   else
     {
       switch (content[0])
@@ -283,7 +294,7 @@ char * read_ventil( void )
 char * read_pump_power( void )
 {
   if ( vito_read(0x0a3c, 1, content) < 0 )
-    sprintf( valuestr, "NULL" );
+    make_null();
   else
     sprintf( valuestr, "%u", content[0] );
 
@@ -294,7 +305,7 @@ char * read_pump_power( void )
 char * read_VL_soll_temp( void )
 {
   if ( vito_read(0x2544, 2, content) < 0 )
-    sprintf( valuestr, "NULL" );
+    make_null();
   else
     interpret_int16_t( content );
   return valuestr;
@@ -303,7 +314,7 @@ char * read_VL_soll_temp( void )
 char * read_raum_soll_temp( void)
 {
   if ( vito_read(0x2306, 1, content) < 0 )
-    sprintf( valuestr, "NULL" );
+    make_null();
   else
     sprintf( valuestr, "%u", content[0] );
 
@@ -325,7 +336,7 @@ int write_raum_soll_temp( int temp )
 char * read_red_raum_soll_temp( void)
 {
   if ( vito_read(0x2307, 1, content) < 0 )
-    sprintf( valuestr, "NULL" );
+    make_null();
   else
     sprintf( valuestr, "%u", content[0] );
 
