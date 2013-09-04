@@ -7,6 +7,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdint.h>
+#include "vito_io.h"
 
 // Globals:
 static int fd_tty = 0; // Filedescriptor serielle Schnittstelle

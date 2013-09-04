@@ -7,8 +7,8 @@
 #include <string.h>
 #include <signal.h>
 #include <unistd.h>
-#include "vito_io.h"
 #include "vito_parameter.h"
+#include "vito_io.h"
 
 // Globals:
 extern int frame_debug;
