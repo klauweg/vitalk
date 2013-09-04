@@ -15,11 +15,24 @@
 // der Lesefunktionen übergebene Adresse:
 char valuestr[40];
 
-// Wird global definiert, aber nur lokal in jeder Funktion zur übergabe des Speicherinhalts
-// aus bzw. an die Vitodens verwendet. Semantisch wohl nicht ganz sauber, aber wie könnte
-// man sonst vermeiden das Array in jeder funktion neu zu definieren?
+// Enthält den Speicherinhalt der aktuellen Adresse in der Vitodens:
 static uint8_t content[30];
 
+
+
+// Funktion zum interpretieren von 16bit Daten im content-array als
+// (signed) int16_t mit LSB first, MSB last (Viessmann Data Byteorder)
+// Gültig für übliche 2-byte Temperaturparameter mit 0,1°C Auflösung
+static void interpret_int16_t( uint8_t *content )
+{
+  int16_t value;
+  
+  value = content[0];
+  value += ( content[1] << 8 );
+
+  sprintf( valuestr, "%3.2f", value / 10.0 );
+}
+    
 // Hier folgt pro Parameter eine C-Funktion:
 // Rückgabewert bei den Lesefunktionen ist ein Pointer
 // auf ein char-array mit dem Ergebnistext.
@@ -81,64 +94,45 @@ char * read_mode( void )
 //////////////////// KESSEL
 char * read_K_abgas_temp( void )
 {
-  float value;
-  
-  if ( vito_read(0x0808, 2, content) < 0 ) sprintf( valuestr, "NULL" );
+  if ( vito_read(0x0808, 2, content) < 0 )
+    sprintf( valuestr, "NULL" );
   else
-    {
-      value = (content[1] << 8) + content[0]; // bytorder berücksichtigen
-      value = value / 10;                     // Präzision konvertieren
-      sprintf( valuestr, "%3.2f", value );    // Ergebnissstring bauen
-    }
+    interpret_int16_t( content );
   return valuestr;
 }
 
 char * read_K_ist_temp( void )
 {
-  float value;
-  
-  if ( vito_read(0x0802, 2, content) < 0 ) sprintf( valuestr, "NULL" );
+  if ( vito_read(0x0802, 2, content) < 0 )
+    sprintf( valuestr, "NULL" );
   else
-    {
-      value = (content[1] << 8) + content[0];
-      value = value / 10;
-      sprintf( valuestr, "%3.2f", value );
-    }
+    interpret_int16_t( content );
   return valuestr;
 }
 
 char * read_K_istTP_temp( void )
 {
-  float value;
-  
-  if ( vito_read(0x0810, 2, content) < 0 ) sprintf( valuestr, "NULL" );
+  if ( vito_read(0x0810, 2, content) < 0 )
+    sprintf( valuestr, "NULL" );
   else
-    {
-      value = (content[1] << 8) + content[0];
-      value = value / 10;
-      sprintf( valuestr, "%3.2f", value );
-    }
+    interpret_int16_t( content );
   return valuestr;
 }
 
 char * read_K_soll_temp( void )
 {
-  float value;
-  
-  if ( vito_read(0x555a, 2, content) < 0 ) sprintf( valuestr, "NULL" );
+  if ( vito_read(0x555a, 2, content) < 0 )
+    sprintf( valuestr, "NULL" );
   else
-    {
-      value = (content[1] << 8) + content[0];
-      value = value / 10;
-      sprintf( valuestr, "%3.2f", value );
-    }
+    interpret_int16_t( content );
   return valuestr;
 }
 
 //////////////////// WARMWASSER
 char * read_WW_soll_temp( void)
 {
-  if ( vito_read(0x6300, 1, content) < 0 ) sprintf( valuestr, "NULL" );
+  if ( vito_read(0x6300, 1, content) < 0 )
+    sprintf( valuestr, "NULL" );
   else
     sprintf( valuestr, "%u", content[0] );
 
@@ -159,9 +153,8 @@ int write_WW_soll_temp( int temp )
 
 char * read_WW_offset( void )
 {
-  static char valuestr[20];
-
-  if ( vito_read(0x6760, 1, content) < 0 ) sprintf( valuestr, "NULL" );
+  if ( vito_read(0x6760, 1, content) < 0 )
+    sprintf( valuestr, "NULL" );
   else
     sprintf( valuestr, "%u", content[0] );
 
@@ -170,29 +163,20 @@ char * read_WW_offset( void )
 
 char * read_WW_istTP_temp( void )
 {
-  float value;
-  
-  if ( vito_read(0x0812, 2, content) < 0 ) sprintf( valuestr, "NULL" );
+  if ( vito_read(0x0812, 2, content) < 0 )
+    sprintf( valuestr, "NULL" );
   else
-    {
-      value = (content[1] << 8) + content[0];
-      value = value / 10;
-      sprintf( valuestr, "%3.2f", value );
-    }
+    interpret_int16_t( content );
+  
   return valuestr;
 }
 
 char * read_WW_ist_temp( void )
 {
-  float value;
-  
-  if ( vito_read(0x0804, 2, content) < 0 ) sprintf( valuestr, "NULL" );
+  if ( vito_read(0x0804, 2, content) < 0 )
+    sprintf( valuestr, "NULL" );
   else
-    {
-      value = (content[1] << 8) + content[0];
-      value = value / 10;
-      sprintf( valuestr, "%3.2f", value );
-    }
+    interpret_int16_t( content );
   return valuestr;
 }
 
@@ -200,43 +184,28 @@ char * read_WW_ist_temp( void )
 /////////////////// AUSSENTEMPERATUR
 char * read_outdoor_TP_temp( void )
 {
-  float value;
-  
-  if ( vito_read(0x5525, 2, content) < 0 ) sprintf( valuestr, "NULL" );
+  if ( vito_read(0x5525, 2, content) < 0 )
+    sprintf( valuestr, "NULL" );
   else
-    {
-      value = (content[1] << 8) + content[0];
-      value = value / 10;
-      sprintf( valuestr, "%3.2f", value );
-    }
+    interpret_int16_t( content );
   return valuestr;
 }
 
 char * read_outdoor_smooth_temp( void )
 {
-  float value;
-  
-  if ( vito_read(0x5527, 2, content) < 0 ) sprintf( valuestr, "NULL" );
+  if ( vito_read(0x5527, 2, content) < 0 )
+    sprintf( valuestr, "NULL" );
   else
-    {
-      value = (content[1] << 8) + content[0];
-      value = value / 10;
-      sprintf( valuestr, "%3.2f", value );
-    }
+    interpret_int16_t( content );
   return valuestr;
 }
 
 char * read_outdoor_temp( void )
 {
-  float value;
-  
-  if ( vito_read(0x0800, 2, content) < 0 ) sprintf( valuestr, "NULL" );
+  if ( vito_read(0x0800, 2, content) < 0 )
+    sprintf( valuestr, "NULL" );
   else
-    {
-      value = (content[1] << 8) + content[0];
-      value = value / 10;
-      sprintf( valuestr, "%3.2f", value );
-    }
+    interpret_int16_t( content );
   return valuestr;
 }
 
@@ -269,21 +238,19 @@ char * read_runtime( void )
 
 char * read_power( void )
 {
-  float value;
-  
-  if ( vito_read(0xa38f, 1, content) < 0 ) sprintf( valuestr, "NULL" );
+  if ( vito_read(0xa38f, 1, content) < 0 )
+    sprintf( valuestr, "NULL" );
   else
-    {
-      value = content[0] / 2.0;
-      sprintf( valuestr, "%3.1f", value );
-    }
+    sprintf( valuestr, "%3.1f", content[0] / 2.0 );
+
   return valuestr;
 }
 
 /////////////////// HYDRAULIK
 char * read_ventil_numeric( void )
 {
-  if ( vito_read(0x0a10, 1, content) < 0 ) sprintf( valuestr, "NULL" );
+  if ( vito_read(0x0a10, 1, content) < 0 )
+    sprintf( valuestr, "NULL" );
   else
     sprintf( valuestr, "%u", content[0] );
 
@@ -292,7 +259,8 @@ char * read_ventil_numeric( void )
 
 char * read_ventil( void )
 {
-  if ( vito_read(0x0a10, 1, content) < 0 ) sprintf( valuestr, "NULL" );
+  if ( vito_read(0x0a10, 1, content) < 0 )
+    sprintf( valuestr, "NULL" );
   else
     {
       switch (content[0])
@@ -314,7 +282,8 @@ char * read_ventil( void )
 
 char * read_pump_power( void )
 {
-  if ( vito_read(0x0a3c, 1, content) < 0 ) sprintf( valuestr, "NULL" );
+  if ( vito_read(0x0a3c, 1, content) < 0 )
+    sprintf( valuestr, "NULL" );
   else
     sprintf( valuestr, "%u", content[0] );
 
@@ -324,21 +293,17 @@ char * read_pump_power( void )
 /////////////////// HEIZKREIS
 char * read_VL_soll_temp( void )
 {
-  float value;
-  
-  if ( vito_read(0x2544, 2, content) < 0 ) sprintf( valuestr, "NULL" );
+  if ( vito_read(0x2544, 2, content) < 0 )
+    sprintf( valuestr, "NULL" );
   else
-    {
-      value = (content[1] << 8) + content[0];
-      value = value / 10;
-      sprintf( valuestr, "%3.2f", value );
-    }
+    interpret_int16_t( content );
   return valuestr;
 }
 
 char * read_raum_soll_temp( void)
 {
-  if ( vito_read(0x2306, 1, content) < 0 ) sprintf( valuestr, "NULL" );
+  if ( vito_read(0x2306, 1, content) < 0 )
+    sprintf( valuestr, "NULL" );
   else
     sprintf( valuestr, "%u", content[0] );
 
@@ -359,7 +324,8 @@ int write_raum_soll_temp( int temp )
 
 char * read_red_raum_soll_temp( void)
 {
-  if ( vito_read(0x2307, 1, content) < 0 ) sprintf( valuestr, "NULL" );
+  if ( vito_read(0x2307, 1, content) < 0 )
+    sprintf( valuestr, "NULL" );
   else
     sprintf( valuestr, "%u", content[0] );
 
