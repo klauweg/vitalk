@@ -5,20 +5,28 @@
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include <string.h>
+#include <stdint.h>
 
 #include "vito_parameter.h"
 #include "vito_io.h"
 
+// Wird global als Speicher für das Ergebnis der Lesefunktionen
+// als Text verwendet. Zugegriffen wird aber nur über die per Rückgabewert
+// der Lesefunktionen übergebene Adresse:
+char valuestr[40];
+
+// Wird global definiert, aber nur lokal in jeder Funktion zur übergabe des Speicherinhalts
+// aus bzw. an die Vitodens verwendet. Semantisch wohl nicht ganz sauber, aber wie könnte
+// man sonst vermeiden das Array in jeder funktion neu zu definieren?
+static uint8_t content[30];
+
 // Hier folgt pro Parameter eine C-Funktion:
-     
+// Rückgabewert bei den Lesefunktionen ist ein Pointer
+// auf ein char-array mit dem Ergebnistext.
 /////////////////// ALLGEMEIN
 char * read_deviceid( void )
 {
-  unsigned char content[2];
-  static char valuestr[20];
-  
-  if ( vito_read(0x00f8, 2, content) < 0 )
-    sprintf( valuestr, "NULL" );
+  if ( vito_read(0x00f8, 2, content) < 0 ) sprintf( valuestr, "NULL" );
   else
     {
       // Normalerweise sind die Parameter in Little Endian
@@ -26,27 +34,19 @@ char * read_deviceid( void )
       // die umgekehrte Interpretation durchgesetzt:
       sprintf( valuestr, "0x%4x", (content[0] << 8) + content[1] );
     }
-  
   return valuestr;
 }
 
 char * read_mode_numeric( void )
 {
-  unsigned char content[1];
-  static char valuestr[20];
-  
-  if ( vito_read(0x2323, 1, content) < 0 )
-    sprintf( valuestr, "NULL" );
+  if ( vito_read(0x2323, 1, content) < 0 ) sprintf( valuestr, "NULL" );
   else
     sprintf( valuestr, "%u", content[0] );
-
   return valuestr;
 }
 
 int write_mode_numeric( int mode )
 {
-  unsigned char content[1];
-  
   // Dauernd reduziert und dauernd normal unterstützt meine Vitodens offenbar nicht
   if ( mode < 0 || mode > 2 )
     {
@@ -60,11 +60,7 @@ int write_mode_numeric( int mode )
 
 char * read_mode( void )
 {
-  unsigned char content[1];
-  static char valuestr[30];
-  
-  if ( vito_read(0x2323, 1, content) < 0 )
-    sprintf( valuestr, "NULL" );
+  if ( vito_read(0x2323, 1, content) < 0 ) sprintf( valuestr, "NULL" );
   else
     {
       switch (content[0])
@@ -85,12 +81,9 @@ char * read_mode( void )
 //////////////////// KESSEL
 char * read_K_abgas_temp( void )
 {
-  unsigned char content[2];
-  static char valuestr[20];
   float value;
   
-  if ( vito_read(0x0808, 2, content) < 0 ) // Speicherbereich einlesen
-    sprintf( valuestr, "NULL" ); // Im Fehlerfall NULL ausgeben (mysqlkompatibel)
+  if ( vito_read(0x0808, 2, content) < 0 ) sprintf( valuestr, "NULL" );
   else
     {
       value = (content[1] << 8) + content[0]; // bytorder berücksichtigen
@@ -102,12 +95,9 @@ char * read_K_abgas_temp( void )
 
 char * read_K_ist_temp( void )
 {
-  unsigned char content[2];
-  static char valuestr[20];
   float value;
   
-  if ( vito_read(0x0802, 2, content) < 0 )
-    sprintf( valuestr, "NULL" );
+  if ( vito_read(0x0802, 2, content) < 0 ) sprintf( valuestr, "NULL" );
   else
     {
       value = (content[1] << 8) + content[0];
@@ -119,12 +109,9 @@ char * read_K_ist_temp( void )
 
 char * read_K_istTP_temp( void )
 {
-  unsigned char content[2];
-  static char valuestr[20];
   float value;
   
-  if ( vito_read(0x0810, 2, content) < 0 )
-    sprintf( valuestr, "NULL" );
+  if ( vito_read(0x0810, 2, content) < 0 ) sprintf( valuestr, "NULL" );
   else
     {
       value = (content[1] << 8) + content[0];
@@ -136,12 +123,9 @@ char * read_K_istTP_temp( void )
 
 char * read_K_soll_temp( void )
 {
-  unsigned char content[2];
-  static char valuestr[20];
   float value;
   
-  if ( vito_read(0x555a, 2, content) < 0 )
-    sprintf( valuestr, "NULL" );
+  if ( vito_read(0x555a, 2, content) < 0 ) sprintf( valuestr, "NULL" );
   else
     {
       value = (content[1] << 8) + content[0];
@@ -154,11 +138,7 @@ char * read_K_soll_temp( void )
 //////////////////// WARMWASSER
 char * read_WW_soll_temp( void)
 {
-  unsigned char content[1];
-  static char valuestr[20];
-  
-  if ( vito_read(0x6300, 1, content) < 0 )
-    sprintf( valuestr, "NULL" );
+  if ( vito_read(0x6300, 1, content) < 0 ) sprintf( valuestr, "NULL" );
   else
     sprintf( valuestr, "%u", content[0] );
 
@@ -167,8 +147,6 @@ char * read_WW_soll_temp( void)
 
 int write_WW_soll_temp( int temp )
 {
-  unsigned char content[1];
-  
   if ( temp < 5 || temp > 60 )
     {
       fprintf( stderr, "WW_soll_temp: range exceeded!\n");
@@ -181,11 +159,9 @@ int write_WW_soll_temp( int temp )
 
 char * read_WW_offset( void )
 {
-  unsigned char content[1];
   static char valuestr[20];
 
-  if ( vito_read(0x6760, 1, content) < 0 )
-    sprintf( valuestr, "NULL" );
+  if ( vito_read(0x6760, 1, content) < 0 ) sprintf( valuestr, "NULL" );
   else
     sprintf( valuestr, "%u", content[0] );
 
@@ -194,12 +170,9 @@ char * read_WW_offset( void )
 
 char * read_WW_istTP_temp( void )
 {
-  unsigned char content[2];
-  static char valuestr[20];
   float value;
   
-  if ( vito_read(0x0812, 2, content) < 0 )
-    sprintf( valuestr, "NULL" );
+  if ( vito_read(0x0812, 2, content) < 0 ) sprintf( valuestr, "NULL" );
   else
     {
       value = (content[1] << 8) + content[0];
@@ -211,12 +184,9 @@ char * read_WW_istTP_temp( void )
 
 char * read_WW_ist_temp( void )
 {
-  unsigned char content[2];
-  static char valuestr[20];
   float value;
   
-  if ( vito_read(0x0804, 2, content) < 0 )
-    sprintf( valuestr, "NULL" );
+  if ( vito_read(0x0804, 2, content) < 0 ) sprintf( valuestr, "NULL" );
   else
     {
       value = (content[1] << 8) + content[0];
@@ -230,12 +200,9 @@ char * read_WW_ist_temp( void )
 /////////////////// AUSSENTEMPERATUR
 char * read_outdoor_TP_temp( void )
 {
-  unsigned char content[2];
-  static char valuestr[20];
   float value;
   
-  if ( vito_read(0x5525, 2, content) < 0 )
-    sprintf( valuestr, "NULL" );
+  if ( vito_read(0x5525, 2, content) < 0 ) sprintf( valuestr, "NULL" );
   else
     {
       value = (content[1] << 8) + content[0];
@@ -247,12 +214,9 @@ char * read_outdoor_TP_temp( void )
 
 char * read_outdoor_smooth_temp( void )
 {
-  unsigned char content[2];
-  static char valuestr[20];
   float value;
   
-  if ( vito_read(0x5527, 2, content) < 0 )
-    sprintf( valuestr, "NULL" );
+  if ( vito_read(0x5527, 2, content) < 0 ) sprintf( valuestr, "NULL" );
   else
     {
       value = (content[1] << 8) + content[0];
@@ -264,12 +228,9 @@ char * read_outdoor_smooth_temp( void )
 
 char * read_outdoor_temp( void )
 {
-  unsigned char content[2];
-  static char valuestr[20];
   float value;
   
-  if ( vito_read(0x0800, 2, content) < 0 )
-    sprintf( valuestr, "NULL" );
+  if ( vito_read(0x0800, 2, content) < 0 ) sprintf( valuestr, "NULL" );
   else
     {
       value = (content[1] << 8) + content[0];
@@ -282,12 +243,9 @@ char * read_outdoor_temp( void )
 /////////////////// BRENNER
 char * read_starts( void )
 {
-  unsigned char content[4];
-  static char valuestr[20];
   unsigned int value;
   
-  if ( vito_read(0x088A, 4, content) < 0 )
-    sprintf( valuestr, "NULL" );
+  if ( vito_read(0x088A, 4, content) < 0 ) sprintf( valuestr, "NULL" );
   else
     {
       value = content[0] + (content[1] << 8) + (content[2] << 16) + (content[3] << 24);
@@ -298,12 +256,9 @@ char * read_starts( void )
 
 char * read_runtime( void )
 {
-  unsigned char content[4];
-  static char valuestr[20];
   unsigned int value;
   
-  if ( vito_read(0x0886, 4, content) < 0 )
-    sprintf( valuestr, "NULL" );
+  if ( vito_read(0x0886, 4, content) < 0 ) sprintf( valuestr, "NULL" );
   else
     {
       value = content[0] + (content[1] << 8) + (content[2] << 16) + (content[3] << 24);
@@ -314,12 +269,9 @@ char * read_runtime( void )
 
 char * read_power( void )
 {
-  unsigned char content[1];
-  static char valuestr[20];
   float value;
   
-  if ( vito_read(0xa38f, 1, content) < 0 )
-    sprintf( valuestr, "NULL" );
+  if ( vito_read(0xa38f, 1, content) < 0 ) sprintf( valuestr, "NULL" );
   else
     {
       value = content[0] / 2.0;
@@ -331,11 +283,7 @@ char * read_power( void )
 /////////////////// HYDRAULIK
 char * read_ventil_numeric( void )
 {
-  unsigned char content[1];
-  static char valuestr[20];
-  
-  if ( vito_read(0x0a10, 1, content) < 0 )
-    sprintf( valuestr, "NULL" );
+  if ( vito_read(0x0a10, 1, content) < 0 ) sprintf( valuestr, "NULL" );
   else
     sprintf( valuestr, "%u", content[0] );
 
@@ -344,11 +292,7 @@ char * read_ventil_numeric( void )
 
 char * read_ventil( void )
 {
-  unsigned char content[1];
-  static char valuestr[30];
-  
-  if ( vito_read(0x0a10, 1, content) < 0 )
-    sprintf( valuestr, "NULL" );
+  if ( vito_read(0x0a10, 1, content) < 0 ) sprintf( valuestr, "NULL" );
   else
     {
       switch (content[0])
@@ -370,11 +314,7 @@ char * read_ventil( void )
 
 char * read_pump_power( void )
 {
-  unsigned char content[1];
-  static char valuestr[20];
-  
-  if ( vito_read(0x0a3c, 1, content) < 0 )
-    sprintf( valuestr, "NULL" );
+  if ( vito_read(0x0a3c, 1, content) < 0 ) sprintf( valuestr, "NULL" );
   else
     sprintf( valuestr, "%u", content[0] );
 
@@ -384,12 +324,9 @@ char * read_pump_power( void )
 /////////////////// HEIZKREIS
 char * read_VL_soll_temp( void )
 {
-  unsigned char content[2];
-  static char valuestr[20];
   float value;
   
-  if ( vito_read(0x2544, 2, content) < 0 )
-    sprintf( valuestr, "NULL" );
+  if ( vito_read(0x2544, 2, content) < 0 ) sprintf( valuestr, "NULL" );
   else
     {
       value = (content[1] << 8) + content[0];
@@ -401,11 +338,7 @@ char * read_VL_soll_temp( void )
 
 char * read_raum_soll_temp( void)
 {
-  unsigned char content[1];
-  static char valuestr[20];
-  
-  if ( vito_read(0x2306, 1, content) < 0 )
-    sprintf( valuestr, "NULL" );
+  if ( vito_read(0x2306, 1, content) < 0 ) sprintf( valuestr, "NULL" );
   else
     sprintf( valuestr, "%u", content[0] );
 
@@ -414,8 +347,6 @@ char * read_raum_soll_temp( void)
 
 int write_raum_soll_temp( int temp )
 {
-  unsigned char content[1];
-  
   if ( temp < 10 || temp > 30 )
     {
       fprintf( stderr, "Raum_soll_temp: range exceeded!\n");
@@ -428,11 +359,7 @@ int write_raum_soll_temp( int temp )
 
 char * read_red_raum_soll_temp( void)
 {
-  unsigned char content[1];
-  static char valuestr[20];
-  
-  if ( vito_read(0x2307, 1, content) < 0 )
-    sprintf( valuestr, "NULL" );
+  if ( vito_read(0x2307, 1, content) < 0 ) sprintf( valuestr, "NULL" );
   else
     sprintf( valuestr, "%u", content[0] );
 
@@ -441,8 +368,6 @@ char * read_red_raum_soll_temp( void)
 
 int write_red_raum_soll_temp( int temp )
 {
-  unsigned char content[1];
-  
   if ( temp < 10 || temp > 30 )
     {
       fprintf( stderr, "Raum_soll_temp: range exceeded!\n");
@@ -452,3 +377,4 @@ int write_red_raum_soll_temp( int temp )
   content[0] = temp & 0xff; // unnötig, aber deutlicher
   return vito_write(0x2307, 1, content);
 }
+
