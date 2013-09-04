@@ -14,13 +14,13 @@
 extern int frame_debug;
 
 // Signal Handler:
-void exit_handler( int num )
+void exit_handler( int exitcode )
 {
   fprintf(stderr, "Abort caught, closing I/O Channels....\n" );
   sleep(5);
   vito_close();
   closetty();
-  exit( num );
+  exit( exitcode );
 }
 
 int main()

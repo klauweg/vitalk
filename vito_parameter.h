@@ -31,12 +31,12 @@ char * read_power( void ); // Leistung in %
 // HYDRAULIK
 char * read_ventil_numeric( void );
 char * read_ventil( void );
-char * read_pump_power( void );
+char * read_pump_power( void ); // %
 
 // HEIZKREIS
-char * read_VL_soll_temp( void );
-char * read_raum_soll_temp( void);
-int write_raum_soll_temp( int temp );
-char * read_red_raum_soll_temp( void);
-int write_red_raum_soll_temp( int temp );
+char * read_VL_soll_temp( void ); // °C
+char * read_raum_soll_temp( void); // °C
+int write_raum_soll_temp( int temp ); // °C
+char * read_red_raum_soll_temp( void); // °C
+int write_red_raum_soll_temp( int temp ); // °C
 
