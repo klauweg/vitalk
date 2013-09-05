@@ -63,6 +63,7 @@ void opentty(char *device)
 // Serielle schnittstelle schließen
 void closetty( void )
 {
+  fprintf( stderr, "Closing Serial Device.\n" );
   close( fd_tty );
 }
 
@@ -112,13 +113,14 @@ void vito_init( void )
 // Zurückschalten ins KW Protokoll:
 void vito_close( void )
 {
-   const uint8_t initKw[] = { 0x04 };
+  const uint8_t initKw[] = { 0x04 };
 
+  fprintf( stderr, "Switch Vitodens to KW Protokoll.\n");
   // Hier etwas unklar wie man sich verhalten soll wenn der
   // Abbruch mitten in einer Telegrammübertragung erfolgt.
   // Etwas warten kann jedenfalls nicht schaden.
   // Bis jetzt hat das immer recht zuverlässig funktioniert.
-   write( fd_tty, initKw, 1 );
+  write( fd_tty, initKw, 1 );
 }
 
 // 8-bit CRC Berechnung

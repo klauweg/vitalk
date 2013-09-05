@@ -255,6 +255,18 @@ char * read_pump_power( void )
   return valuestr;
 }
 
+char * read_flow( void )
+{
+  prologue( 0x0c24, 2 )
+    {    
+      unsigned int value;
+  
+      value = content[0] + (content[1] << 8);
+      sprintf( valuestr, "%u", value );
+    }
+  return valuestr;
+}
+    
 /////////////////// HEIZKREIS
 char * read_VL_soll_temp( void )
 {
