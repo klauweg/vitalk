@@ -26,6 +26,7 @@ char * read_outdoor_temp( void ); // °C
 // BRENNER
 char * read_starts( void ); // Zähler
 char * read_runtime( void ); // Laufzeit in Sekunden
+char * read_runtime_h( void ); // Laufzeit in Stunden
 char * read_power( void ); // Leistung in %
 
 // HYDRAULIK

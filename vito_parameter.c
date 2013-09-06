@@ -212,6 +212,19 @@ char * read_runtime( void )
   return valuestr;
 }
 
+char * read_runtime_h( void )
+{
+  prologue( 0x0886, 4 )
+    {
+      float value;
+  
+      value = content[0] + (content[1] << 8) + (content[2] << 16) + (content[3] << 24);
+      value = value / 3600;
+      sprintf( valuestr, "%06.1f", value );
+    }
+  return valuestr;
+}
+
 char * read_power( void )
 {
   prologue( 0xa38f, 1 )

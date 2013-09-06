@@ -71,9 +71,10 @@ for(;;)
 	 read_outdoor_temp(), read_outdoor_TP_temp(), read_outdoor_smooth_temp() );
 
   printf("BRENNER:\n");
-  printf(" Starts: %s, Laufzeit: %s s, Leistung: %s %%   \n",
-	 read_starts(), read_runtime(), read_power() );
-
+  printf(" Starts: %s, Laufzeit: %s s, Laufzeit: %s h     \n",
+	 read_starts(), read_runtime(), read_runtime_h() );
+  printf(" Leistung: %s %%     \n", read_power() );
+      
   printf("HYDRAULIK:\n");
   printf(" Ventilstellung Numerisch: %s, Stellung: %s       \n",
 	 read_ventil_numeric(), read_ventil() );
