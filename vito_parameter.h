@@ -4,6 +4,7 @@ char * read_deviceid( void );
 char * read_mode_numeric( void );
 int write_mode_numeric( int mode );
 char * read_mode( void );
+char * read_error_history( void );
 
 // KESSEL
 char * read_K_abgas_temp( void ); // °C
@@ -41,4 +42,5 @@ char * read_raum_soll_temp( void); // °C
 int write_raum_soll_temp( int temp ); // °C
 char * read_red_raum_soll_temp( void); // °C
 int write_red_raum_soll_temp( int temp ); // °C
-
+char * read_neigung( void );
+char * read_niveau( void );

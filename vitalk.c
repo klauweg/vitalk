@@ -50,40 +50,44 @@ int main()
 
 for(;;)
     {
-  printf("\033[H");
+      printf("\033[H");
   
-  printf("ALLGEMEIN:\n");
-  printf(" Device Id: %s, Modus Numerisch: %s, Modus: %s         \n",
-	 read_deviceid(), read_mode_numeric(), read_mode() );
+      printf("ALLGEMEIN:\n");
+      printf(" Device Id: %s, Modus Numerisch: %s, Modus: %s         \n",
+	     read_deviceid(), read_mode_numeric(), read_mode() );
 
-  printf("KESSEL:\n");
-  printf(" Kessel Soll Temperatur: %s °C\n", read_K_soll_temp() );
-  printf(" Kessel ist: %s °C, ist TP: %s °C\n", read_K_ist_temp(), read_K_istTP_temp() );
-  printf(" Kessel Abgastemperatur: %s °C\n", read_K_abgas_temp() );
+      printf("KESSEL:\n");
+      printf(" Kessel Soll Temperatur: %s °C\n", read_K_soll_temp() );
+      printf(" Kessel ist: %s °C, ist TP: %s °C\n", read_K_ist_temp(), read_K_istTP_temp() );
+      printf(" Kessel Abgastemperatur: %s °C\n", read_K_abgas_temp() );
   
-  printf("WARMWASSER:\n");
-  printf(" Solltemperatur: %s °C\n", read_WW_soll_temp() );
-  printf(" Vorlaufoffset: %s K\n", read_WW_offset() );
-  printf(" ist: %s °C, ist Tiefpass: %s °C\n", read_WW_ist_temp(), read_WW_istTP_temp() );
+      printf("WARMWASSER:\n");
+      printf(" Solltemperatur: %s °C\n", read_WW_soll_temp() );
+      printf(" Vorlaufoffset: %s K\n", read_WW_offset() );
+      printf(" ist: %s °C, ist Tiefpass: %s °C\n", read_WW_ist_temp(), read_WW_istTP_temp() );
   
-  printf("AUSSENTEMPERATUR\n");
-  printf(" ist: %s °C, ist Tiefpass: %s °C, ist gedämpft: %s °C\n",
-	 read_outdoor_temp(), read_outdoor_TP_temp(), read_outdoor_smooth_temp() );
+      printf("AUSSENTEMPERATUR\n");
+      printf(" ist: %s °C, ist Tiefpass: %s °C, ist gedämpft: %s °C\n",
+	     read_outdoor_temp(), read_outdoor_TP_temp(), read_outdoor_smooth_temp() );
 
-  printf("BRENNER:\n");
-  printf(" Starts: %s, Laufzeit: %s s, Laufzeit: %s h     \n",
-	 read_starts(), read_runtime(), read_runtime_h() );
-  printf(" Leistung: %s %%     \n", read_power() );
+      printf("BRENNER:\n");
+      printf(" Starts: %s, Laufzeit: %s s, Laufzeit: %s h     \n",
+	     read_starts(), read_runtime(), read_runtime_h() );
+      printf(" Leistung: %s %%     \n", read_power() );
       
-  printf("HYDRAULIK:\n");
-  printf(" Ventilstellung Numerisch: %s, Stellung: %s       \n",
-	 read_ventil_numeric(), read_ventil() );
-  printf(" Pumpe: %s %%\n", read_pump_power() );
-  printf(" Volumenstrom: %s l/h        \n", read_flow() );
+      printf("HYDRAULIK:\n");
+      printf(" Ventilstellung Numerisch: %s, Stellung: %s       \n",
+	     read_ventil_numeric(), read_ventil() );
+      printf(" Pumpe: %s %%\n", read_pump_power() );
+      printf(" Volumenstrom: %s l/h        \n", read_flow() );
       
-  printf("HEIZKREISTEMPERATUREN:\n");
-  printf(" Vorlaufsoll: %s °C, Raumsoll: %s °C, red. Raumsoll %s °C\n",
-	 read_VL_soll_temp(), read_raum_soll_temp(), read_red_raum_soll_temp() );
+      printf("HEIZKREISTEMPERATUREN:\n");
+      printf(" Vorlaufsoll: %s °C, Raumsoll: %s °C, red. Raumsoll %s °C\n",
+	     read_VL_soll_temp(), read_raum_soll_temp(), read_red_raum_soll_temp() );
+      printf(" Neigung: %s,  Niveau: %s   \n", read_neigung(), read_niveau() );
+      
+      printf("FEHLERSPEICHER:\n");
+      printf( "%s", read_error_history() );
 
       sleep(1);
     }

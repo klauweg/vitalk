@@ -9,6 +9,7 @@
 
 #include "vito_parameter.h"
 #include "vito_io.h"
+#include "fehlerliste.h"
 
 // Das prologue() Makro wird verwendet um den Anfang der
 // Parameterfunktionen zu bauen:
@@ -89,6 +90,34 @@ char * read_mode( void )
 	  break;
 	}
     }
+  return valuestr;
+}
+
+// Das auslesen der Fehlerliste ist etwas konfus, denn in dem
+// vito.xml file von ceteris paribus werden 9 byte pro eintrag
+// gelesen. Ich sehe den Sinn aber nicht?
+char * read_error_history( void )
+{
+  static char valuestr[10*80];
+  uint8_t content[10];
+  int address;
+  int i;
+  
+  strcpy( valuestr, "" );
+  
+  i = 0;
+  for ( address = 0x7507; address <= 0x7558; address += 9 )
+    {
+      if ( vito_read( address, 1, &content[i] ) < 0 )
+	strcat( valuestr, "NULL\n" );
+      else
+	{
+	  strcat( valuestr, fehlerliste[content[i]] );
+	  strcat( valuestr, "\n" );
+	}
+      i++;
+    }
+  
   return valuestr;
 }
 
@@ -330,3 +359,16 @@ int write_red_raum_soll_temp( int temp )
   return vito_write(0x2307, 1, content);
 }
 
+char * read_neigung( void )
+{
+  prologue( 0x27d3, 1 )
+    sprintf( valuestr, "%2.1f", content[0] / 10.0 );
+  return valuestr;
+}
+
+char * read_niveau( void )
+{
+  prologue( 0x27d4, 1 )
+    sprintf( valuestr, "%u", content[0] );
+  return valuestr;
+}
