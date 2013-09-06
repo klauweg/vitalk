@@ -41,10 +41,10 @@ int main()
   opentty("/dev/ttyUSB0");
   vito_init();
 
-  write_WW_soll_temp( 40 );
-  write_mode_numeric(1);
-  write_raum_soll_temp( 23 );
-  write_red_raum_soll_temp( 15 );
+//  write_WW_soll_temp( 40 );
+//  write_mode_numeric(1);
+//  write_raum_soll_temp( 23 );
+//  write_red_raum_soll_temp( 15 );
   
   printf("\033[2J\033[;H");
 
@@ -53,12 +53,12 @@ for(;;)
   printf("\033[H");
   
   printf("ALLGEMEIN:\n");
-  printf(" Device Id: %s, Modus Numerisch: %s, Modus: %s\n",
+  printf(" Device Id: %s, Modus Numerisch: %s, Modus: %s         \n",
 	 read_deviceid(), read_mode_numeric(), read_mode() );
 
   printf("KESSEL:\n");
-  printf(" Kessel ist: %s °C, ist TP: %s °C\n", read_K_ist_temp(), read_K_istTP_temp() );
   printf(" Kessel Soll Temperatur: %s °C\n", read_K_soll_temp() );
+  printf(" Kessel ist: %s °C, ist TP: %s °C\n", read_K_ist_temp(), read_K_istTP_temp() );
   printf(" Kessel Abgastemperatur: %s °C\n", read_K_abgas_temp() );
   
   printf("WARMWASSER:\n");
@@ -71,14 +71,14 @@ for(;;)
 	 read_outdoor_temp(), read_outdoor_TP_temp(), read_outdoor_smooth_temp() );
 
   printf("BRENNER:\n");
-  printf(" Starts: %s, Laufzeit: %s s, Leistung: %s %%\n",
+  printf(" Starts: %s, Laufzeit: %s s, Leistung: %s %%   \n",
 	 read_starts(), read_runtime(), read_power() );
 
   printf("HYDRAULIK:\n");
-  printf(" Ventilstellung Numerisch: %s, Stellung: %s\n",
+  printf(" Ventilstellung Numerisch: %s, Stellung: %s       \n",
 	 read_ventil_numeric(), read_ventil() );
   printf(" Pumpe: %s %%\n", read_pump_power() );
-  printf(" Volumenstrom: %s l/h\n", read_flow() );
+  printf(" Volumenstrom: %s l/h        \n", read_flow() );
       
   printf("HEIZKREISTEMPERATUREN:\n");
   printf(" Vorlaufsoll: %s °C, Raumsoll: %s °C, red. Raumsoll %s °C\n",
