@@ -1,11 +1,12 @@
 #include <my_global.h>
 #include <mysql.h>
 
-int my_query( char * querystring,
-	      char * hostname,
-	      char * username,
-	      char * password,
-	      char * database )
+char *my_hostname = NULL;
+char *my_username = NULL;
+char *my_password = NULL;
+char *my_database = NULL;
+
+int my_query( char * querystring )
 {
   MYSQL *con = mysql_init(NULL);
   
@@ -15,8 +16,8 @@ int my_query( char * querystring,
       exit(1);
     }
   
-  if (mysql_real_connect(con, hostname, username, password, 
-			     database, 0, NULL, 0) == NULL) 
+  if (mysql_real_connect(con, my_hostname, my_username, my_password, 
+			     my_database, 0, NULL, 0) == NULL) 
     {
           fprintf(stderr, "%s\n", mysql_error(con));
           mysql_close(con);

@@ -12,9 +12,9 @@
 #include "vito_io.h"
 #include "fehlerliste.h"
 
-// Die Parameterfunktionen greifen nur max. alle CACHE_TIME Sekunden auf die Anlage zu.
+// Die Parameterfunktionen greifen nur max. alle param_cache_time Sekunden auf die Anlage zu.
 // Andernfalls wird nur der String vom letzten mal als Cache zurückgegeben.
-#define CACHE_TIME 5
+int param_cache_time = 5;
 
 // Das prologue() Makro wird verwendet, um den Anfang der
 // Parameterfunktionen zu bauen:
@@ -22,7 +22,7 @@
    static char valuestr[40]; \
    static time_t old_time = 0; \
    uint8_t content[30]; \
-   if ( time( NULL ) > old_time + CACHE_TIME ) \
+   if ( time( NULL ) > old_time + param_cache_time ) \
    { \
      old_time = time( NULL ); \
      if ( vito_read( (address), (length), content ) < 0 ) \
@@ -121,7 +121,7 @@ char * read_error_history( void )
   int address;
   int i;
 
-  if ( time( NULL ) > old_time + CACHE_TIME )
+  if ( time( NULL ) > old_time + param_cache_time )
     {
       old_time = time( NULL );
 

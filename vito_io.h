@@ -1,5 +1,7 @@
 #include <stdint.h>
 
+extern int frame_debug;
+
 // Öffnet die serielle Schnittstelle zum Kessel:
 void opentty(char *device);
 
