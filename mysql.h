@@ -5,6 +5,9 @@ int my_query( char * querystring,
 	      char * password,
 	      char * database );
 
+// einen Datensatz in die Datenbank schreiben:
+void my_log ( void );
+
 // Globale Variable zu Konfiguration:
 extern char *my_hostname;
 extern char *my_username;
