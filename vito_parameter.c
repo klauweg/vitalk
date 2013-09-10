@@ -135,7 +135,7 @@ char * read_error_history( void )
 	  else
 	    {
 	      strcat( valuestr, fehlerliste[content[i]] );
-	      strcat( valuestr, "\n" );
+	      strcat( valuestr, "                     \n" );
 	    }
 	  i++;
 	}
