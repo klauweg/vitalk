@@ -28,14 +28,19 @@ void exit_handler( int exitcode )
 
 int main(int argc, char **argv)
 {
-  int c;
+  // Option processing
+  int c; 
+  // Diverse Options:
   char *tty_devicename = NULL;
   int log_intervall = 10;
   int text_log_flag = 0;
   int error_log_flag = 0;
+  
+  // Server:
   struct timeval *timeout;
   timeout = (struct timeval *) malloc( sizeof(struct timeval) );
   
+  // Option processing with GNU getopt
   while ((c = getopt (argc, argv, "H:U:P:D:T:hft:c:se")) != -1)
     switch(c)
       {
@@ -71,9 +76,6 @@ int main(int argc, char **argv)
 	break;
       case 's':
 	text_log_flag = 1;
-	// Wenn die (wiederholte) Textausgabe der Parameter erfolgen soll,
-	// löschen wir vorher besser den Bildschirm:
-	printf("\033[2J\033[;H");
 	break;
       case 'e':
 	error_log_flag = 1;
@@ -115,6 +117,8 @@ int main(int argc, char **argv)
       exit(5);
     }
 
+  /////////////////////////////////////////////////////////////////////////////
+  
   signal(SIGINT, exit_handler);
   signal(SIGHUP, exit_handler);
 
@@ -123,7 +127,14 @@ int main(int argc, char **argv)
 
   timeout->tv_sec = 1; // Den ersten Timeout immer nach einer Sekunde!
   timeout->tv_usec = 0;
-      
+  
+  if ( text_log_flag )
+    {
+      // Wenn die (wiederholte) Textausgabe der Parameter erfolgen soll,
+      // löschen wir vorher besser den Bildschirm:
+      printf("\033[2J\033[;H");
+    }
+  
   // Main Event-Loop. Kann nur durch die Signalhandler beendet werden.
   for (;;)
     {
