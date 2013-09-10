@@ -31,7 +31,8 @@ int my_query( char * querystring )
       mysql_close(con);
       return -1;
     }
-  
+
+  mysql_close(con);
   return 0;
 }
 
