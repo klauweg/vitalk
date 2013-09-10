@@ -124,12 +124,6 @@ int main(int argc, char **argv)
 	break;
       case 'T':
 	sscanf( optarg, "%d", &log_intervall);
-	if ( log_intervall < 1 ||
-	     log_intervall > 600 )
-	  {
-	    printf("ERROR: Log Intervall must between 1 and 600 sec.!\n");
-	    exit(5);
-	  }
 	break;
       case 'f':
 	frame_debug = 1;
@@ -139,23 +133,32 @@ int main(int argc, char **argv)
 	break;
       case 'c':
 	sscanf( optarg, "%d", &param_cache_time );
-	if ( param_cache_time < 1 ||
-	     param_cache_time > 600 )
-	  {
-	    printf("ERROR: Cache Time must between 1 and 600 sec.!\n");
-	    exit(5);
-	  }
 	break;
       case '?':
 	exit (8);
       }
   
+  // Do some checks:
   if ( !tty_devicename )
     {
       printf("ERROR: Need tty Devicename!\n");
       exit(5);
     }
+
+  if ( log_intervall < 1 ||
+       log_intervall > 600 )
+    {
+      printf("ERROR: Log Intervall must between 1 and 600 sec.!\n");
+      exit(5);
+    }
   
+  if ( param_cache_time < 1 ||
+       param_cache_time > 600 )
+    {
+      printf("ERROR: Cache Time must between 1 and 600 sec.!\n");
+      exit(5);
+    }
+
   signal(SIGINT, exit_handler);
   signal(SIGHUP, exit_handler);
 
@@ -190,16 +193,6 @@ int main(int argc, char **argv)
 	    }
 	}
     }
-  
-//  write_WW_soll_temp( 40 );
-//  write_mode_numeric(1);
-//  write_raum_soll_temp( 23 );
-//  write_red_raum_soll_temp( 15 );
-  
 
-  vito_close();
-  closetty();
-  
-  return 0;
 }
 
