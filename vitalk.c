@@ -38,25 +38,23 @@ int main(int argc, char **argv)
   int text_log_flag = 0;
   int error_log_flag = 0;
   
-  // Server:
+  // Main event loop:
   struct timeval *timeout;
   timeout = (struct timeval *) malloc( sizeof(struct timeval) );
-  
-  fd_set master; /* master file descriptor list */
-  fd_set read_fds; /* temp file descriptor list for select() */
+
+  // This is for the telnet Socket
+  fd_set master_fds, read_fds; /* file descriptor list for select() */
+  int fd_listener; /* listening socket descriptor */
+  int fd_telnet; /* File Descriptor for Telnet */
   struct sockaddr_in serveraddr; /* server address */
   struct sockaddr_in clientaddr; /* client address */
-  int fdmax; /* maximum file descriptor number */
-  int listener; /* listening socket descriptor */
-  int newfd; /* newly accept()ed socket descriptor */
-  int yes = 1; /* for setsockopt() SO_REUSEADDR, below */
-  socklen_t addrlen;
-  int i;
-  char buf[1024]; /* buffer for client data */
+  socklen_t addrlen = sizeof(clientaddr); // wird als pointer gebraucht
+  char telnet_buf[80]; /* buffer for client data */
+  int telnet_buf_ptr;
   int nbytes;
-  
+
   // Option processing with GNU getopt
-  while ((c = getopt (argc, argv, "H:U:P:D:T:hft:c:se")) != -1)
+  while ((c = getopt (argc, argv, "H:U:P:D:T:hft:se")) != -1)
     switch(c)
       {
       case 'h':
@@ -74,7 +72,6 @@ int main(int argc, char **argv)
 	       "  -T <log_t>    set LogIntervall in sec.\n"
 	       "  -f            activate framedebugging\n"
 	       "  -t <tty_dev>  set tty Devicename to Vitodens\n"
-	       "  -c <cache_t>  set parameter cache intervall in sec.\n"
                );
 	exit(1);
       case 'H':
@@ -104,9 +101,6 @@ int main(int argc, char **argv)
       case 't':
 	tty_devicename = optarg;
 	break;
-      case 'c':
-	sscanf( optarg, "%d", &param_cache_time );
-	break;
       case '?':
 	exit (8);
       }
@@ -125,24 +119,14 @@ int main(int argc, char **argv)
       exit(5);
     }
   
-  if ( param_cache_time < 1 ||
-       param_cache_time > 600 )
-    {
-      printf("ERROR: Cache Time must between 1 and 600 sec.!\n");
-      exit(5);
-    }
-
   /////////////////////////////////////////////////////////////////////////////
   
   signal(SIGINT, exit_handler);
   signal(SIGHUP, exit_handler);
 
-  opentty( tty_devicename );
-  vito_init();
+//  opentty( tty_devicename );
+//  vito_init();
 
-  timeout->tv_sec = 1; // Den ersten Timeout immer nach einer Sekunde!
-  timeout->tv_usec = 0;
-  
   if ( text_log_flag )
     {
       // Wenn die (wiederholte) Textausgabe der Parameter erfolgen soll,
@@ -150,102 +134,105 @@ int main(int argc, char **argv)
       printf("\033[2J\033[;H");
     }
 
-  /* clear the master and temp sets */
-  FD_ZERO(&master);
-  FD_ZERO(&read_fds);
+  // Clear File Descriptor Set for select()
+  FD_ZERO(&master_fds);
   /* create socket */
-  if((listener = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+  if((fd_listener = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0)) == -1)
     {
       fprintf( stderr, "Error creating Socket!\n");
       exit(1);
     }
-   if(setsockopt(listener, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1)
+
+  // Set REUSEADDR option
+  // Sonst kann man nach einem Programmabbruch längere Zeit nicht neu starten
+  const int optVal = 1;
+  if ( setsockopt(fd_listener, SOL_SOCKET, SO_REUSEADDR, (void*) &optVal, sizeof(int)) == -1 )
     {
-      fprintf( stderr, "Error configuring Socket!\n");
+      fprintf( stderr, "Error setting Socket Options!\n");
       exit(1);
     }
+  
   /* bind */
   serveraddr.sin_family = AF_INET;
   serveraddr.sin_addr.s_addr = INADDR_ANY;
   serveraddr.sin_port = htons(PORT);
-  memset(&(serveraddr.sin_zero), '\0', 8);
-  if(bind(listener, (struct sockaddr *)&serveraddr, sizeof(serveraddr)) == -1)
+  memset(&(serveraddr.sin_zero), '\0', sizeof(serveraddr.sin_zero) );
+  if(bind(fd_listener, (struct sockaddr *)&serveraddr, sizeof(serveraddr)) == -1)
     {
       fprintf( stderr, "Error bind Socket!\n");
       exit(1);
     }
   /* listen */
-  if(listen(listener, 10) == -1)
+  if(listen(fd_listener, 5) == -1)
    {
       fprintf( stderr, "Error listen Socket!\n");
       exit(1);
    }
   /* add the listener to the master set */
-  FD_SET(listener, &master);
-  /* keep track of the biggest file descriptor */
-  fdmax = listener; /* so far, it's this one*/
+  FD_SET(fd_listener, &master_fds);
 
-  
   // Main Event-Loop. Kann nur durch die Signalhandler beendet werden.
   for (;;)
     {
-      read_fds = master;
-      if ( select ( fdmax+1, &read_fds, NULL, NULL, timeout ) > 0 )
+      timeout->tv_sec = 1; // select timeout immer nach einer Sekunde
+      timeout->tv_usec = 0;
+      read_fds = master_fds;
+      if ( select ( 10, &read_fds, NULL, NULL, timeout ) > 0 )
 	{
-	  /*run through the existing connections looking for data to be read*/
-	  for(i = 0; i <= fdmax; i++)
+	  if ( FD_ISSET( fd_listener, &read_fds ) ) // neue Verbindung?
 	    {
-	      if(FD_ISSET(i, &read_fds))
-		{ /* we got one... */
-		  if(i == listener)
-		    { /* handle new connections */
-		      addrlen = sizeof(clientaddr);
-		      if((newfd = accept(listener, (struct sockaddr *)&clientaddr, &addrlen)) == -1)
-			{
-			  fprintf( stderr, "Error accepting Connection!\n");
-			  exit(1);
-			}
-		      else
-			{
-			  FD_SET(newfd, &master); /* add to master set */
-			  if(newfd > fdmax) /* keep track of the maximum */
-			    fdmax = newfd;
-			  printf("New connection from %s on socket %d\n", inet_ntoa(clientaddr.sin_addr), newfd);
-			}
-		    }
-		  else
-		    { /* handle data from a client */
-		      if((nbytes = recv(i, buf, sizeof(buf), 0)) <= 0)
-			{ /* got error or connection closed by client */
-			  if(nbytes == 0)
-			    /* connection closed */
-			     printf("socket %d hung up\n", i);
-			  close(i); /* close it */
-			  FD_CLR(i, &master); /* remove from master set */
-			}
-		      else
-			{
-			  printf("%s", buf);
-			}
+	      if((fd_telnet = accept(fd_listener, (struct sockaddr *)&clientaddr, &addrlen)) == -1)
+		{
+		  fprintf( stderr, "Error accepting Connection!\n");
+		  exit(1);
+		}
+	      else
+		{
+		  FD_SET(fd_telnet , &master_fds); /* add to master set */
+		  printf("New Telnet connection from %s on socket %d\n",
+			 inet_ntoa(clientaddr.sin_addr), fd_telnet);
+		  telnet_buf_ptr = 0;
+		}
+	    }
+	  if ( FD_ISSET( fd_telnet, &read_fds) ) // Daten per Telnet?
+	    {
+	      if((nbytes = recv(fd_telnet,
+				telnet_buf + telnet_buf_ptr,
+				sizeof(telnet_buf) - telnet_buf_ptr - 1, 0)) <= 0)
+		{ /* got error or connection closed by client */
+		  //  if(nbytes == 0)
+		  //    /* connection closed */
+		  //     printf("socket %d hung up\n", i);
+		  close(fd_telnet); /* close it */
+		  FD_CLR(fd_telnet, &master_fds); /* remove from master set */
+		  printf("Telnet Connection closed.\n");
+		}
+	      else
+		{ // Hier wurden Zeichen gelesen:
+		  telnet_buf_ptr += nbytes;
+		  telnet_buf[telnet_buf_ptr]='\0';
+		  if ( ( strchr(telnet_buf, '\n') ) || // Newline im Puffer?
+		       ( telnet_buf_ptr > sizeof(telnet_buf) - 4 ) ) // // Puffer ziemlich voll?
+		    { // Dann werten wir das aus:
+		      printf("#%s\n", telnet_buf);
+		      
+		      telnet_buf_ptr = 0;
 		    }
 		}
 	    }
 	}
       else
 	{
-	  // Timeout. Die Linuximplementierung modifiziert die Restzeit
-	  // falls der Timeout bei Rückkehr aus select() noch nicht abgelaufen
-	  // war. War er abgelaufen, muss er in jedem Fall neu gesetzt werden:
-	  timeout->tv_sec = log_intervall;
-	  timeout->tv_usec = 0;
+	  // Timeout
 	  if ( text_log_flag )
 	    {
 	      printf("\033[H"); // "HOME"
-	      print_all( stdout, error_log_flag ); // Parameter auf stdout ausgeben
+//	      print_all( stdout, error_log_flag ); // Parameter auf stdout ausgeben
 	    }
 	  if ( my_database )
 	    {
-	      my_log(); // Einen Datensatz in die SQL Datenbank schreiben
+	      ;
+//	      my_log(); // Einen Datensatz in die SQL Datenbank schreiben
 	    }
 	}
     }

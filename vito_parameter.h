@@ -1,6 +1,3 @@
-// Konfiguriert die Parameter Cache Zeit in Sekunden:
-extern int param_cache_time;
-
 // ALLGEMEIN
 char * read_deviceid( void );
 char * read_mode_numeric( void );
