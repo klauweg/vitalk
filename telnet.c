@@ -43,7 +43,7 @@ void telnet_init(fd_set *master_fds )
       exit(1);
     }
   /* listen */
-  if(listen(fd_listener, 5) == -1)
+  if(listen(fd_listener, 5) == -1) // "5" = listen backlog
    {
       fprintf( stderr, "Error listen Socket!\n");
       exit(1);
@@ -56,22 +56,32 @@ void telnet_task(fd_set *master_fds, fd_set *read_fds)
 {
   static char telnet_buf[2048]; /* buffer for client data */
   static int telnet_buf_ptr;
-
-  // Gibt es eine neue Verbindungsanfrage und es besteht noch keine?
-  if ( fd_telnet == 0 && FD_ISSET( fd_listener, read_fds ) )
+  int fd_new;
+  
+  // Gibt es eine neue Verbindungsanfrage?
+  if ( FD_ISSET( fd_listener, read_fds ) )
     {
       socklen_t addrlen = sizeof(clientaddr); // wird als pointer gebraucht
-      if((fd_telnet = accept(fd_listener, (struct sockaddr *)&clientaddr, &addrlen)) == -1)
+      if((fd_new = accept(fd_listener, (struct sockaddr *)&clientaddr, &addrlen)) == -1)
 	{
 	  fprintf( stderr, "Error accepting Connection!\n");
 	  exit(1);
 	}
       else
 	{
-	  FD_SET(fd_telnet , master_fds); /* add to master set */
-	  printf("New Telnet connection from %s on socket %d\n",
-		 inet_ntoa(clientaddr.sin_addr), fd_telnet);
-	  telnet_buf_ptr = 0;
+	  if ( fd_telnet == 0 )
+	    { // Verbindung akzeptieren, wenn es noch keine gibt:
+	      fd_telnet = fd_new;
+	      FD_SET(fd_telnet , master_fds); /* add to master set */
+	      printf("New Telnet connection from %s on socket %d\n",
+		     inet_ntoa(clientaddr.sin_addr), fd_telnet);
+	      telnet_buf_ptr = 0;
+	    }
+	  else
+	    { // Neue Verbindung ablehnen, wenn schon eine existiert:
+	      printf("New Telnet connection declined.\n");
+	      close( fd_new );
+	    }
 	}
     }
 
@@ -83,8 +93,8 @@ void telnet_task(fd_set *master_fds, fd_set *read_fds)
       if( recv(fd_telnet, telnet_buf + telnet_buf_ptr, 1, 0 ) <= 0 )
 	{ /* got error or connection closed by client */
 	  close(fd_telnet); /* close it */
-	  fd_telnet = 0; // Damit neue Verbindungen angenommen werden können
 	  FD_CLR(fd_telnet, master_fds); /* remove from master set */
+	  fd_telnet = 0; // Damit neue Verbindungen angenommen werden können
 	  printf("Telnet Connection closed.\n");
 	}
       else
