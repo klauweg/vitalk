@@ -30,17 +30,16 @@ int main(int argc, char **argv)
   int c; 
   // Diverse Options:
   char *tty_devicename = NULL;
-  int log_intervall = 10;
-  int text_log_flag = 0;
-  int error_log_flag = 0;
+  int text_log_intervall = 0;
   
   // Main event loop (select()):
   struct timeval *timeout;
   timeout = (struct timeval *) malloc( sizeof(struct timeval) );
   fd_set master_fds, read_fds; /* file descriptor list for select() */
+  int timecounter;
   
   // Option processing with GNU getopt
-  while ((c = getopt (argc, argv, "H:U:P:D:T:hft:se")) != -1)
+  while ((c = getopt (argc, argv, "H:U:P:D:hft:s:")) != -1)
     switch(c)
       {
       case 'h':
@@ -53,9 +52,7 @@ int main(int argc, char **argv)
 	       "  -P <password> set MySQL Password for Logging\n"
 	       "  -D <database> set MySQL Database Name for Logging\n"
 	       "                wenn nicht angegeben, wird nicht in Datenbank geloggt.\n"
-	       "  -s            aktiviere Parameterwertausgabe auf stdout\n"
-	       "  -e            Parameterausgabe auf stdout mit Fehlerspeicher\n"
-	       "  -T <log_t>    set LogIntervall in sec.\n"
+	       "  -s <log_t>    aktiviere Parameterwertausgabe auf stdout\n"
 	       "  -f            activate framedebugging\n"
 	       "  -t <tty_dev>  set tty Devicename\n"
                );
@@ -73,13 +70,7 @@ int main(int argc, char **argv)
 	my_database = optarg;
 	break;
       case 's':
-	text_log_flag = 1;
-	break;
-      case 'e':
-	error_log_flag = 1;
-	break;
-      case 'T':
-	sscanf( optarg, "%d", &log_intervall);
+	sscanf( optarg, "%d", &text_log_intervall);
 	break;
       case 'f':
 	frame_debug = 1;
@@ -98,14 +89,14 @@ int main(int argc, char **argv)
       exit(5);
     }
 
-  if ( log_intervall < 1 ||
-       log_intervall > 600 )
+  if ( text_log_intervall < 1 ||
+       text_log_intervall > 600 )
     {
       printf("ERROR: Log Intervall must between 1 and 600 sec.!\n");
       exit(5);
     }
   
-  if ( text_log_flag )
+  if ( text_log_intervall > 0 )
     {
       // Wenn die (wiederholte) Textausgabe der Parameter erfolgen soll,
       // löschen wir vorher besser den Bildschirm:
@@ -130,6 +121,7 @@ int main(int argc, char **argv)
   // ein client sehr schnell ist:
   telnet_init(&master_fds);
 
+  timecounter = 0;
   
   // Main Event-Loop. (Kann nur durch die Signalhandler beendet werden.)
   for (;;)
@@ -142,19 +134,34 @@ int main(int argc, char **argv)
 	{ // Filedescriptoren bearbeiten:
 	  telnet_task( &master_fds, &read_fds );
 	}
-      else
-	{ // Timeout bearbeiten:
-	  if ( text_log_flag )
+      else // select() Timeout bearbeiten:
+	{
+	  // Hier machen wir jede Stunde einen Überlauf. Das stimmt aber
+	  // nicht exakt, weil der 1sec. select() Timeout immer wieder
+	  // neu gestartet wird, wenn i/o durchgeführt wird. D.h. das Logging
+	  // wird gebremst, wenn viel Zugriff auf dem Telnet-Port passiert.
+	  if ( ++timecounter > 3600 )
+	    timecounter = 0;
+
+	  // Bei Bedarf Statusmeldungen auf stdout ausgeben:
+	  if ( text_log_intervall )
 	    {
-	      printf("TEST!\n");
-//	      printf("\033[H"); // "HOME"
-//	      print_all( stdout, error_log_flag ); // Parameter auf stdout ausgeben
+	      if ( timecounter % text_log_intervall == 0 )
+		{
+		  printf("\033[H"); // "HOME"
+		  print_all(); // Parameter auf stdout ausgeben
+		}
 	    }
+
+	  // Wenn der Datenbankname gesetzt ist, führen wir Logging
+	  // in die Datenbank durch:
 	  if ( my_database )
 	    {
 	      ;
 //	      my_log(); // Einen Datensatz in die SQL Datenbank schreiben
 	    }
+	  printf("%d\n",timecounter);
+
 	}
     }
 

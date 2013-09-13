@@ -1,2 +1,2 @@
 
-void print_all( FILE *file, int error_flag );
+void print_all( void );
