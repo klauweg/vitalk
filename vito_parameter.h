@@ -4,6 +4,7 @@ char * read_mode_numeric( void );
 int write_mode_numeric( int mode );
 char * read_mode( void );
 char * read_error_history( void );
+char * read_error_history_numeric( void );
 
 // KESSEL
 char * read_K_abgas_temp( void ); // °C

@@ -57,7 +57,7 @@ int main(int argc, char **argv)
 	       "  -e            Parameterausgabe auf stdout mit Fehlerspeicher\n"
 	       "  -T <log_t>    set LogIntervall in sec.\n"
 	       "  -f            activate framedebugging\n"
-	       "  -t <tty_dev>  set tty Devicename to Vitodens\n"
+	       "  -t <tty_dev>  set tty Devicename\n"
                );
 	exit(1);
       case 'H':
@@ -118,13 +118,19 @@ int main(int argc, char **argv)
   signal(SIGHUP, exit_handler);
 
   // Clear File Descriptor Set for select()
+  // Wir machen das nicht in telnet_init, weil u.U. noch weitere TCP Dienste
+  // hinzukommen könnten und dann käme es auf die Reihenfolge der Initialisierung an.
   FD_ZERO(&master_fds);
   
+  opentty( tty_devicename );
+  
+  vito_init();
+
+  // Das machen wir sicherheitshalber erst nach vito_init(), für den Fall dass
+  // ein client sehr schnell ist:
   telnet_init(&master_fds);
 
-//  opentty( tty_devicename );
-//  vito_init();
-
+  
   // Main Event-Loop. (Kann nur durch die Signalhandler beendet werden.)
   for (;;)
     {

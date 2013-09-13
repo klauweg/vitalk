@@ -120,28 +120,51 @@ char * read_error_history( void )
 {
   static char valuestr[10*80];
   static time_t old_time = 0;
-  uint8_t content[10];
+  uint8_t content;
   int address;
-  int i;
 
   if ( time( NULL ) > old_time + PARAM_CACHE_TIME )
     {
       old_time = time( NULL );
-
       strcpy( valuestr, "" );
-  
-      i = 0;
       for ( address = 0x7507; address <= 0x7558; address += 9 )
 	{
-	  if ( vito_read( address, 1, &content[i] ) < 0 )
+	  if ( vito_read( address, 1, &content ) < 0 )
 	    strcat( valuestr, "NULL\n" );
 	  else
 	    {
-	      strcat( valuestr, fehlerliste[content[i]] );
-	      strcat( valuestr, "                     \n" );
+	      sprintf( valuestr, "%s0x%02x %s                   \n", 
+		       valuestr, content, fehlerliste[content] );
 	    }
-	  i++;
 	}
+    }
+  
+  return valuestr;
+}
+// Das ganze nochmal in numerischer Form:
+char * read_error_history_numeric( void )
+{
+  static char valuestr[80];
+  static time_t old_time = 0;
+  uint8_t content[10];
+  int address;
+  int i=0;
+  
+  if ( time( NULL ) > old_time + PARAM_CACHE_TIME )
+    {
+      old_time = time( NULL );
+      strcpy( valuestr, "" );
+      for ( address = 0x7507; address <= 0x7558; address += 9 )
+	{
+	  if ( vito_read( address, 1, &content[i++] ) < 0 )
+	    {
+	      strcpy( valuestr, "NULL\n" );
+	      return valuestr;
+	    }
+	}
+      sprintf( valuestr,"%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+	       content[0],content[1],content[2],content[3],content[4],
+	       content[5],content[6],content[7],content[8],content[9] );
     }
   
   return valuestr;
