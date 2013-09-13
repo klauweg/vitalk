@@ -6,7 +6,7 @@ int my_query( char * querystring,
 	      char * database );
 
 // einen Datensatz in die Datenbank schreiben:
-void my_log ( void );
+void my_live_log ( void );
 
 // Globale Variable zu Konfiguration:
 extern char *my_hostname;

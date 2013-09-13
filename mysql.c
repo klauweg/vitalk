@@ -7,10 +7,14 @@ char *my_username = NULL;
 char *my_password = NULL;
 char *my_database = NULL;
 
+// Hier wird ein querystring an die Datenbank geschickt. Die Verbindung wird
+// dazu jedesmal wieder geöffnet und geschlossen. Ich gehe davon aus dass keine größeren
+// Performanceprobleme dadurch auftreten. Damit ist aber hoffentlich auch die Frage geklärt,
+// was passiert, wenn die Datenbank mal nicht erreichbar sein sollte.
 int my_query( char * querystring )
 {
   MYSQL *con = mysql_init(NULL);
-  
+
   if (con == NULL) 
     {
       fprintf(stderr, "%s\n", mysql_error(con));
@@ -36,26 +40,30 @@ int my_query( char * querystring )
   return 0;
 }
 
-void my_log( void )
+void my_live_log( void )
 {
   char query[2000];
   
   sprintf( query,
-	   "INSERT INTO vitolog (mode, kessel_soll, kessel_ist, kessel_abgas,"
+	   "INSERT INTO vitolog_live (mode, kessel_soll, kessel_ist, kessel_abgas,"
 	   "                     warmwasser_soll, warmwasser_offset, warmwasser_ist,"
 	   "                     aussentemp, aussentemp_ged, starts, runtime, leistung,"
 	   "                     ventil, pumpe, flow, vorlauf_soll, raum_soll,"
-	   "                     raum_soll_red, neigung, niveau ) VALUES ("
+	   "                     raum_soll_red, neigung, niveau,"
+	   "                     error1, error2, error3, error4, error5,"
+	   "                     error6, error7, error8, error9, error10) VALUES ("
 	   "                     %s, %s * 10, %s * 10, %s * 10,"
            "                     %s, %s, %s * 10,"
 	   "                     %s * 10, %s * 10, %s, %s, %s,"
 	   "                     %s, %s, %s, %s, %s,"
-           "                     %s, %s * 10, %s )",
+           "                     %s, %s * 10, %s, %s )",
 	   read_mode_numeric(), read_K_soll_temp(), read_K_istTP_temp(), read_K_abgas_temp(),
 	   read_WW_soll_temp(), read_WW_offset(), read_WW_istTP_temp(),
 	   read_outdoor_TP_temp(), read_outdoor_smooth_temp(), read_starts(), read_runtime(), read_power(),
 	   read_ventil_numeric(), read_pump_power(), read_flow(), read_VL_soll_temp(), read_raum_soll_temp(),
-	   read_red_raum_soll_temp(), read_neigung(), read_niveau() );
+	   read_red_raum_soll_temp(), read_neigung(), read_niveau(), read_error_history_numeric() );
 
   my_query( query );
+  
+  
 }

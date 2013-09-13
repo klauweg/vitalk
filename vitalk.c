@@ -7,6 +7,7 @@
 #include <string.h>
 #include <signal.h>
 #include <unistd.h>
+#include <time.h>
 #include "vito_parameter.h"
 #include "vito_io.h"
 #include "mysql.h"
@@ -31,12 +32,6 @@ int main(int argc, char **argv)
   // Diverse Options:
   char *tty_devicename = NULL;
   int text_log_intervall = 0;
-  
-  // Main event loop (select()):
-  struct timeval *timeout;
-  timeout = (struct timeval *) malloc( sizeof(struct timeval) );
-  fd_set master_fds, read_fds; /* file descriptor list for select() */
-  int timecounter;
   
   // Option processing with GNU getopt
   while ((c = getopt (argc, argv, "H:U:P:D:hft:s:")) != -1)
@@ -89,7 +84,7 @@ int main(int argc, char **argv)
       exit(5);
     }
 
-  if ( text_log_intervall < 1 ||
+  if ( text_log_intervall < 0 ||
        text_log_intervall > 600 )
     {
       printf("ERROR: Log Intervall must between 1 and 600 sec.!\n");
@@ -104,7 +99,14 @@ int main(int argc, char **argv)
     }
 
   /////////////////////////////////////////////////////////////////////////////
-  
+
+  // Main event loop (select()):
+  struct timeval *timeout;
+  timeout = (struct timeval *) malloc( sizeof(struct timeval) );
+  fd_set master_fds, read_fds; /* file descriptor list for select() */
+  time_t last_livelog = 0;
+  time_t last_textlog = 0;
+
   signal(SIGINT, exit_handler);
   signal(SIGHUP, exit_handler);
 
@@ -121,8 +123,6 @@ int main(int argc, char **argv)
   // ein client sehr schnell ist:
   telnet_init(&master_fds);
 
-  timecounter = 0;
-  
   // Main Event-Loop. (Kann nur durch die Signalhandler beendet werden.)
   for (;;)
     {
@@ -134,20 +134,14 @@ int main(int argc, char **argv)
 	{ // Filedescriptoren bearbeiten:
 	  telnet_task( &master_fds, &read_fds );
 	}
-      else // select() Timeout bearbeiten:
-	{
-	  // Hier machen wir jede Stunde einen Überlauf. Das stimmt aber
-	  // nicht exakt, weil der 1sec. select() Timeout immer wieder
-	  // neu gestartet wird, wenn i/o durchgeführt wird. D.h. das Logging
-	  // wird gebremst, wenn viel Zugriff auf dem Telnet-Port passiert.
-	  if ( ++timecounter > 3600 )
-	    timecounter = 0;
-
+      else
+	{ // select() Timeout bearbeiten:
 	  // Bei Bedarf Statusmeldungen auf stdout ausgeben:
 	  if ( text_log_intervall )
 	    {
-	      if ( timecounter % text_log_intervall == 0 )
+	      if ( time(NULL) >= last_textlog + text_log_intervall )
 		{
+		  last_textlog = time(NULL);
 		  printf("\033[H"); // "HOME"
 		  print_all(); // Parameter auf stdout ausgeben
 		}
@@ -157,11 +151,14 @@ int main(int argc, char **argv)
 	  // in die Datenbank durch:
 	  if ( my_database )
 	    {
-	      ;
-//	      my_log(); // Einen Datensatz in die SQL Datenbank schreiben
+	      // Kürzere Logzeiten führen hier zu recht unregelmäßigem Logging,
+	      // weils immer einmal us dem Cache kommt und einmal direkt....
+	      if ( time(NULL) >= last_livelog + 7 )
+		{
+		  last_livelog = time(NULL);
+		  my_live_log();
+		}
 	    }
-	  printf("%d\n",timecounter);
-
 	}
     }
 
