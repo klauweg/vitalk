@@ -14,7 +14,7 @@ CREATE TABLE vitolog_config (
       raum_soll TINYINT(2) UNSIGNED NOT NULL,         # 1°
       raum_soll_red TINYINT(2) UNSIGNED NOT NULL,     # 1°
       neigung TINYINT UNSIGNED NOT NULL,              # 0,1
-      niveau TINYINT UNSIGNED NOT NULL,               # 1K
+      niveau TINYINT UNSIGNED NOT NULL                # 1K
    ) ENGINE = MyISAM, ROW_FORMAT=FIXED;
    
 # Hier wird nur geloggt, wenn der Brenner oder Pumpe auch läuft, aber dafür
@@ -22,6 +22,7 @@ CREATE TABLE vitolog_config (
 CREATE TABLE IF NOT EXISTS vitolog_kessel (
       timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL PRIMARY KEY,  # 4byte
       start_count INT UNSIGNED NOT NULL,           # Zähler (4byte)
+      delta_runtime SMALLINT UNSIGNED NOT NULL,    # Sekunden seit letztem log
       ventil TINYINT(1) UNSIGNED NOT NULL,         # 0-3
       pumpe TINYINT(3) UNSIGNED NOT NULL,          # %
       flow SMALLINT UNSIGNED NOT NULL,             # l/h
@@ -35,21 +36,21 @@ CREATE TABLE IF NOT EXISTS vitolog_kessel (
 
 # Hier kommen Werte die sich langsam verändern und werden daher nur seltener
 # geloggt, dafür aber unabhängig vom Betriebszustand (60sec.):
-CREATE TABLE vitolog_slow (
-      timestamp TIMESTAMP CURRENT_TIMESTAMP NOT NULL PRIMARY KEY,   # 4 byte
+CREATE TABLE IF NOT EXISTS vitolog_slow (
+      timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL PRIMARY KEY,   # 4 byte
       runtime INT UNSIGNED NOT NULL,                  # Zähler, Sekunden, 4byte
       warmwasser_ist SMALLINT(3) UNSIGNED NOT NULL,   # 0,1°C
       aussentemp SMALLINT(3) NOT NULL,                # 0,1°C
       aussentemp_ged SMALLINT(3) NOT NULL,            # 0,1°C
-      vorlauf_soll SMALLINT(3) NOT NULL               # 0,1°C
-      kessel_ist SMALLINT(3) NOT NULL,                # 0,1°C (redundant in vitolog_kessel)
+      vorlauf_soll SMALLINT(3) NOT NULL,              # 0,1°C
+      kessel_ist SMALLINT(3) NOT NULL                 # 0,1°C (redundant in vitolog_kessel)
    ) ENGINE = MyISAM, ROW_FORMAT=FIXED;
 
 
 # Hier wird der Fehlerspeicher geloggt, aber auch nur wenn sich etwas
 # geändert hat:
-CREATE TABLE vitolog_errors (
-      timestamp TIMESTAMP CURRENT_TIMESTAMP NOT NULL,   # 4 byte
+CREATE TABLE IF NOT EXISTS vitolog_errors (
+      timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,   # 4 byte
       error1 TINYINT UNSIGNED NOT NULL,
       error2 TINYINT UNSIGNED NOT NULL,
       error3 TINYINT UNSIGNED NOT NULL,
