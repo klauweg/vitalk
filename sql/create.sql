@@ -1,3 +1,5 @@
+runtime zum integrieren verwenden?
+
 # Für Spalten mit NULL wird zusätzlich Speicher benötigt! wir verzichten
 # daher darauf.
 # MyISAM Tabellen dürften für unseren Zweck effizienter sein.

@@ -7,6 +7,9 @@ char *my_username = NULL;
 char *my_password = NULL;
 char *my_database = NULL;
 
+// Minimales Loggingintervall für zeit-hochauflösenden Parameter in Sekunden:
+#define MIN_LOG 10
+
 // Hier wird ein querystring an die Datenbank geschickt. Die Verbindung wird
 // dazu jedesmal wieder geöffnet und geschlossen. Ich gehe davon aus dass keine größeren
 // Performanceprobleme dadurch auftreten. Damit ist aber hoffentlich auch die Frage geklärt,
@@ -40,9 +43,29 @@ int my_query( char * querystring )
   return 0;
 }
 
-void my_live_log( void )
+// Diese funktion wird bei jedem Timeout der select() Funktion
+// der main event loop aufgerufen. (ca. jede Sekunde)
+void my_log_task( void )
 {
+  static time_t last_log = 0;
+  static int last_runtime = 0;
   char query[2000];
+  
+  // Zeit noch nicht abgelaufen, dann geben wir gleich wieder zurück:
+  if ( time(NULL) / MIN_LOG <= last_log )
+    return 0;
+
+  // Merken für nächstes mal:
+  last_log = time(NULL) / MIN_LOG;
+#if 0  
+  // Wenn Brenner an ist oder Pumpe läuft oder Volumenstrom gemessen wird,
+  // loggen wir die Kesselrelevanten Parameter alle MIN_LOG Sekunden:
+  if ( atoi(read_pump_power()) > 0 ||
+       atoi(read_flow()) > 3 ||
+       strcmp( read_power(), "0.0" ) )
+    {
+      if ( last_runtime ) // Haben wir schon einen Wert der letzen Kessellaufzeit?
+      sprintf( query, INSERT INTO vitolog_kessel( runtime, 
   
   sprintf( query,
 	   "INSERT INTO vitolog_live (mode, kessel_soll, kessel_ist, kessel_abgas,"
@@ -64,6 +87,6 @@ void my_live_log( void )
 	   read_red_raum_soll_temp(), read_neigung(), read_niveau(), read_error_history_numeric() );
 
   my_query( query );
-  
-  
+#endif
+  last_runtime = atoi( read_runtime() );
 }

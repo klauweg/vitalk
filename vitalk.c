@@ -104,7 +104,6 @@ int main(int argc, char **argv)
   struct timeval *timeout;
   timeout = (struct timeval *) malloc( sizeof(struct timeval) );
   fd_set master_fds, read_fds; /* file descriptor list for select() */
-  time_t last_livelog = 0;
   time_t last_textlog = 0;
 
   signal(SIGINT, exit_handler);
@@ -136,28 +135,20 @@ int main(int argc, char **argv)
 	}
       else
 	{ // select() Timeout bearbeiten:
-	  // Bei Bedarf Statusmeldungen auf stdout ausgeben:
+
 	  if ( text_log_intervall )
-	    {
-	      if ( time(NULL) >= last_textlog + text_log_intervall )
+	    { // Bei Bedarf Statusmeldungen auf stdout ausgeben:
+	      if ( time(NULL) / text_log_intervall > last_textlog )
 		{
-		  last_textlog = time(NULL);
+		  last_textlog = time(NULL) / text_log_intervall;
 		  printf("\033[H"); // "HOME"
 		  print_all(); // Parameter auf stdout ausgeben
 		}
 	    }
 
-	  // Wenn der Datenbankname gesetzt ist, führen wir Logging
-	  // in die Datenbank durch:
 	  if ( my_database )
-	    {
-	      // Kürzere Logzeiten führen hier zu recht unregelmäßigem Logging,
-	      // weils immer einmal us dem Cache kommt und einmal direkt....
-	      if ( time(NULL) >= last_livelog + 7 )
-		{
-		  last_livelog = time(NULL);
-		  my_live_log();
-		}
+	    { // Wenn Datenbankname gesetzt, Logging in die Datenbank:
+	      my_log_task();
 	    }
 	}
     }
