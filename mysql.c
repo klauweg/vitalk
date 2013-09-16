@@ -77,7 +77,7 @@ void my_log_task( void )
 		   "start_count, delta_runtime, ventil, pumpe, flow,"
 	           "leistung, kessel_soll, kessel_ist, abgas) VALUES ("
 	           "%s, %d, %s, %s, %s,"
-	           "%s * 10, %s * 10, %s * 10, %s * 10 )",
+	           "%s, %s * 10, %s * 10, %s * 10 )",
 	       read_starts(), this_runtime - last_runtime, read_ventil_numeric(), read_pump_power(), read_flow(),
 	       read_power(), read_K_soll_temp(), read_K_istTP_temp(), read_K_abgas_temp() );
 	  
