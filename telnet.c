@@ -25,6 +25,7 @@ const char *commands[] =
    "set",               // 4
    "s",                 // 5
    "list",              // 6
+   "gc",                // 7
    "\0"
 };
 
@@ -33,21 +34,39 @@ static void print_help( int fd )
 {
   dprintf(fd,
 	  "Short Help Text:\n"
-	  "  h, help           - This Help Text\n"
-	  "  list [class]      - Show parameter List\n"
-	  "\n\n"
+	  "  h, help                 - This Help Text\n"
+	  "  list [class]            - Show parameter List\n"
+	  "  g, get <p_name>         - Query Parameter\n"
+	  "  s, set <p_name> <value> - Set Parameter\n"
+	  "  gc <class>              - Query a class of Parameters\n"
+	  "\n"
     );
 }
 
+static void get_class( int fd, int p_class )
+{
+  int i=0;
+  while( parameter_liste[i].p_name[0] )
+    {
+      if ( p_class == 0 || p_class == parameter_liste[i].p_class )
+	dprintf(fd, "%02u: %20s: %s\n",
+		parameter_liste[i].p_class,
+		parameter_liste[i].p_name,
+		get_v(parameter_liste[i].p_name)
+	       );
+      i++;
+    }
+  dprintf(fd, "\n");
+}
+  
 // Liste aller Parameter
 static void print_listall( int fd, int p_class )
 {
   int i=0;
-  
   while( parameter_liste[i].p_name[0] )
     {
       if ( p_class == 0 || p_class == parameter_liste[i].p_class )
-	dprintf(fd, "%02u: %s: %s\n",
+	dprintf(fd, "%02u: %20s: %s\n",
 		parameter_liste[i].p_class,
 		parameter_liste[i].p_name,
 		parameter_liste[i].p_description
@@ -192,7 +211,10 @@ void telnet_task( void )
 				//set
 				break;
 			      case 6:
-				print_listall(i, atoi(value1));
+				print_listall( i, atoi(value1) );
+				break;
+			      case 7:
+				get_class( i, atoi(value1) );
 				break;
 			      }
 			}

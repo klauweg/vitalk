@@ -450,7 +450,7 @@ int read_niveau( char **value_ptr )
 
 
 //////////////////////////////////////////////////////////////////////////
-
+// obacht: maximale Befehlslänge 20 Zeichen, sonst klemmt der telnet-parser
 const struct s_parameter parameter_liste[] = {
   { "errors", "Error History (numerisch)", "", P_ERRORS, &read_errors, NULL },
   { "errors_text", "Error History (text)", "", P_ERRORS, &read_errors_text, NULL },
