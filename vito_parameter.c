@@ -29,29 +29,16 @@
      { \
 
 // Das epilogue() Makro wird verwendet, um das Ende der
-// Parameterfunktionen zu bauen:
+// (meisten) Parameterfunktionen zu bauen:
 #define epilogue() \
    } } \
    value_ptr = value_str; \
    return 0;
 
-// Funktion zum interpretieren von 16bit Daten im content-array als
-// (signed) int16_t mit LSB first, MSB last (Viessmann Data Byteorder)
-// Gültig für übliche 2-byte Temperaturparameter mit 0,1°C Auflösung
-// Dieses Format tritt am häufigsten auf und wird deshalb hier als
-// Funktion bereitgestellt:
-static void interpret_int16_t( uint8_t *content, char *valuestr )
-{
-  int16_t value;
-  
-  value = content[0];
-  value += ( content[1] << 8 );
-
-  sprintf( valuestr, "%3.2f", value / 10.0 );
-}
 
 ////////////////////////// PARAMETERFUNKTIONEN ////////////////////
 
+/* -------------------------------- */
 int read_deviceid( char *value_ptr )
 {
   prologue( 0x00f8, 2, 240, 10 )
@@ -62,6 +49,7 @@ int read_deviceid( char *value_ptr )
   epilogue()
 }
 
+/* -------------------------------- */
 int read_mode( char *value_ptr )
 {
   prologue( 0x2323, 1, 6, 5 )
@@ -69,6 +57,7 @@ int read_mode( char *value_ptr )
   epilogue()
 }
 
+/* -------------------------------- */
 int write_mode( char *value_str )
 {
   uint8_t content[10];
@@ -86,6 +75,7 @@ int write_mode( char *value_str )
   return vito_write(0x2323, 1, content);
 }
 
+/* -------------------------------- */
 int read_mode_text( char *value_ptr )
 {
   static char value_str[50] = "";
@@ -110,6 +100,7 @@ int read_mode_text( char *value_ptr )
   return 0;
 }
 
+/* -------------------------------- */
 // Das Auslesen der Fehlerliste ist etwas konfus, denn in dem
 // vito.xml file von ceteris paribus werden 9 byte pro Eintrag
 // gelesen. Ich sehe den Sinn aber nicht? Ich muss mal noch beobachten was passiert
@@ -143,6 +134,7 @@ int read_error_history( char *value_ptr )
   return 0;
 }
 
+/* -------------------------------- */
 int read_error_history_text( char *value_ptr )
 {
   static char value_str[80*10] = "";
@@ -161,7 +153,7 @@ int read_error_history_text( char *value_ptr )
   // String mit 10 Zeilen der Fehlerbeschreibungen basteln:
   value_str[0]='\0';
   for ( i=0; i<=9; i++ )
-    sprintf( value_str, "%s0x%02x %s                   \n", 
+    sprintf( value_str, "%s0x%02x %s\n", 
 		       value_str, atoi(error[i]), fehlerliste[atoi(error[i])] );
   value_ptr = value_str;
   return 0;
@@ -169,46 +161,54 @@ int read_error_history_text( char *value_ptr )
 
 
 //////////////////// KESSEL
-char * read_K_abgas_temp( void )
+/* -------------------------------- */
+int read_K_abgas_temp( char *value_ptr )
 {
-  prologue( 0x0808, 2 )
-    interpret_int16_t( content, valuestr );
+  prologue( 0x0808, 2, 6, 6 )
+    sprintf( value_str, "%3.2f", ( content[0] + (content[1] << 8)) / 10.0 );
   epilogue()
 }
 
-char * read_K_ist_temp( void )
+/* -------------------------------- */
+int read_K_ist_temp( char *value_ptr )
 {
-  prologue( 0x0802, 2 )
-    interpret_int16_t( content, valuestr );
+  prologue( 0x0802, 2, 6, 6 )
+    sprintf( value_str, "%3.2f", ( content[0] + (content[1] << 8)) / 10.0 );
   epilogue()
 }
 
-char * read_K_istTP_temp( void )
+/* -------------------------------- */
+int read_K_istTP_temp( char *value_ptr )
 {
-  prologue( 0x0810, 2 )
-    interpret_int16_t( content, valuestr );
+  prologue( 0x0810, 2, 6, 6 )
+    sprintf( value_str, "%3.2f", ( content[0] + (content[1] << 8)) / 10.0 );
   epilogue()
 }
 
-char * read_K_soll_temp( void )
+/* -------------------------------- */
+int read_K_soll_temp( char *value_ptr )
 {
-  prologue( 0x555a, 2 )
-    interpret_int16_t( content, valuestr );
+  prologue( 0x555a, 2, 6, 6 )
+    sprintf( value_str, "%3.2f", ( content[0] + (content[1] << 8)) / 10.0 );
   epilogue()
 }
 
 //////////////////// WARMWASSER
-char * read_WW_soll_temp( void)
+/* -------------------------------- */
+int read_WW_soll_temp( char *value_ptr)
 {
-  prologue( 0x6300, 1 )
-    sprintf( valuestr, "%u", content[0] );
+  prologue( 0x6300, 1, 6, 6 )
+    sprintf( value_str, "%3.2f", ( content[0] + (content[1] << 8)) / 10.0 );
   epilogue()
 }
 
-int write_WW_soll_temp( int temp )
+/* -------------------------------- */
+int write_WW_soll_temp( char *value_str )
 {
-  uint8_t content[30];
+  uint8_t content[3];
+  int temp;
   
+  temp = atoi( value_str );
   if ( temp < 5 || temp > 60 )
     {
       fprintf( stderr, "WW_soll_temp: range exceeded!\n");
@@ -219,54 +219,61 @@ int write_WW_soll_temp( int temp )
   return vito_write(0x6300, 1, content);
 }
 
-char * read_WW_offset( void )
+/* -------------------------------- */
+int read_WW_offset( char *value_ptr )
 {
-  prologue( 0x6760, 1 )
+  prologue( 0x6760, 1, 60, 5 )
     sprintf( valuestr, "%u", content[0] );
   epilogue()
 }
 
-char * read_WW_istTP_temp( void )
+/* -------------------------------- */
+int read_WW_istTP_temp( char *value_ptr )
 {
-  prologue( 0x0812, 2 )
-    interpret_int16_t( content, valuestr );
+  prologue( 0x0812, 2, 6, 6 )
+    sprintf( value_str, "%3.2f", ( content[0] + (content[1] << 8)) / 10.0 );
   epilogue()
 }
 
-char * read_WW_ist_temp( void )
+/* -------------------------------- */
+int read_WW_ist_temp( char *value_ptr )
 {
-  prologue( 0x0804, 2 )
-    interpret_int16_t( content, valuestr );
+  prologue( 0x0804, 2, 6, 6 )
+    sprintf( value_str, "%3.2f", ( content[0] + (content[1] << 8)) / 10.0 );
   epilogue()
 }
 
 
 /////////////////// AUSSENTEMPERATUR
-char * read_outdoor_TP_temp( void )
+/* -------------------------------- */
+int read_outdoor_TP_temp( char *value_ptr )
 {
-  prologue( 0x5525, 2 )
-    interpret_int16_t( content, valuestr );
+  prologue( 0x5525, 2, 6, 6 )
+    sprintf( value_str, "%3.2f", ( content[0] + (content[1] << 8)) / 10.0 );
   epilogue()
 }
 
-char * read_outdoor_smooth_temp( void )
+/* -------------------------------- */
+int read_outdoor_smooth_temp( char *value_ptr )
 {
-  prologue( 0x5527, 2 )
-    interpret_int16_t( content, valuestr );
+  prologue( 0x5527, 2, 6, 6 )
+    sprintf( value_str, "%3.2f", ( content[0] + (content[1] << 8)) / 10.0 );
   epilogue()
 }
 
-char * read_outdoor_temp( void )
+/* -------------------------------- */
+int read_outdoor_temp( char *value_ptr )
 {
-  prologue( 0x0800, 2 )
-    interpret_int16_t( content, valuestr );
+  prologue( 0x0800, 2, 6, 6 )
+    sprintf( value_str, "%3.2f", ( content[0] + (content[1] << 8)) / 10.0 );
   epilogue()
 }
 
 /////////////////// BRENNER
-char * read_starts( void )
+/* -------------------------------- */
+int read_starts( char *value_ptr )
 {
-  prologue( 0x088A, 4 )
+  prologue( 0x088A, 4, 6, 20 )
     {
       unsigned int value;
   
@@ -276,102 +283,113 @@ char * read_starts( void )
   epilogue()
 }
 
-char * read_runtime( void )
+/* -------------------------------- */
+int read_runtime( char *value_ptr )
 {
-  prologue( 0x0886, 4 )
+  prologue( 0x0886, 4, 6, 20 )
     {
       unsigned int value;
   
       value = content[0] + (content[1] << 8) + (content[2] << 16) + (content[3] << 24);
-      sprintf( valuestr, "%u", value );
+      sprintf( value_str, "%u", value );
     }
   epilogue()
 }
 
-char * read_runtime_h( void )
+/* -------------------------------- */
+int read_runtime_h( char *value_ptr )
 {
-  prologue( 0x0886, 4 )
-    {
-      float value;
-  
-      value = content[0] + (content[1] << 8) + (content[2] << 16) + (content[3] << 24);
-      value = value / 3600;
-      sprintf( valuestr, "%06.1f", value );
-    }
-  epilogue()
+  static char value_str[20] = "";
+  char result[20];
+
+  if ( read_runtime( result ) < 0 )
+    return -1;
+
+  sprintf( value_str, "%06.1f", atoi(result) / 3600.0 );
+
+  value_ptr = value_str;
+  return 0;
 }
 
-char * read_power( void )
+/* -------------------------------- */
+int read_power( char *value_ptr )
 {
-  prologue( 0xa38f, 1 )
-    sprintf( valuestr, "%3.1f", content[0] / 2.0 );
+  prologue( 0xa38f, 1, 6, 6 )
+    sprintf( value_str, "%3.1f", content[0] / 2.0 );
   epilogue()
 }
 
 /////////////////// HYDRAULIK
-char * read_ventil_numeric( void )
+/* -------------------------------- */
+int read_ventil( char *value_ptr )
 {
-  prologue( 0x0a10, 1 )
+  prologue( 0x0a10, 1, 6, 5 )
     sprintf( valuestr, "%u", content[0] );
   epilogue()
 }
 
-char * read_ventil( void )
+/* -------------------------------- */
+int read_ventil_text( char *value_ptr )
 {
-  prologue( 0x0a10, 1 )
-    {
-      switch (content[0])
-	{
-	case 0: strcpy( valuestr, "undefiniert" );
-	  break;
-	case 1: strcpy( valuestr, "Heizkreis" );
-	  break;
-	case 2: strcpy( valuestr, "Mittelstellung" );
-	  break;
-	case 3: strcpy( valuestr, "Warmwasserbereitung" );
-	  break;
-	default: sprintf( valuestr, "UNKNOWN: %u", content[0] );
-	  break;
-	}
-    }
-  epilogue()
-}
-
-char * read_pump_power( void )
-{
-  prologue( 0x0a3c, 1 )
-    sprintf( valuestr, "%u", content[0] );
-  epilogue()
-}
-
-char * read_flow( void )
-{
-  prologue( 0x0c24, 2 )
-    {    
-      unsigned int value;
+  static char value_str[30]="";
+  char buffer[5];
   
-      value = content[0] + (content[1] << 8);
-      sprintf( valuestr, "%u", value );
+  if ( read_ventil(buffer) < 0 )
+    return -1;
+  
+  switch (atoi(buffer))
+    {
+    case 0: strcpy( value_str, "undefiniert" );
+      break;
+    case 1: strcpy( value_str, "Heizkreis" );
+      break;
+    case 2: strcpy( value_str, "Mittelstellung" );
+      break;
+    case 3: strcpy( value_str, "Warmwasserbereitung" );
+      break;
+    default: sprintf( value_str, "UNKNOWN: %s", buffer );
+      break;
     }
+  
+  value_ptr = value_str;
+  return 0;
+}
+
+/* -------------------------------- */
+int read_pump_power( char *value_ptr )
+{
+  prologue( 0x0a3c, 1, 6, 5 )
+    sprintf( value_str, "%u", content[0] );
+  epilogue()
+}
+
+/* -------------------------------- */
+int read_flow( char *value_ptr )
+{
+  prologue( 0x0c24, 2, 6, 20 )
+    sprintf( value_str, "%u", (content[0] + (content[1] << 8)) );
   epilogue()
 }
     
 /////////////////// HEIZKREIS
-char * read_VL_soll_temp( void )
+/* -------------------------------- */
+int read_VL_soll_temp( char *value_ptr )
 {
-  prologue( 0x2544, 2 )
-    interpret_int16_t( content, valuestr );
+  prologue( 0x2544, 2, 6, 6 )
+    sprintf( value_str, "%3.2f", ( content[0] + (content[1] << 8)) / 10.0 );
   epilogue()
 }
 
-char * read_raum_soll_temp( void)
+/* -------------------------------- */
+int read_raum_soll_temp( char *value_ptr )
 {
-  prologue( 0x2306, 1 )
-    sprintf( valuestr, "%u", content[0] );
+  prologue( 0x2306, 1, 6, 5 )
+    sprintf( value_str, "%u", content[0] );
   epilogue()
 }
 
-int write_raum_soll_temp( int temp )
+/* -------------------------------- */
+int write_raum_soll_temp( char *value_str )
 {
   uint8_t content[30];
   
@@ -385,14 +403,16 @@ int write_raum_soll_temp( int temp )
   return vito_write(0x2306, 1, content);
 }
 
-char * read_red_raum_soll_temp( void)
+/* -------------------------------- */
+int read_red_raum_soll_temp( char *value_ptr )
 {
-  prologue( 0x2307, 1 )
-    sprintf( valuestr, "%u", content[0] );
+  prologue( 0x2307, 1, 6, 5 )
+    sprintf( value_str, "%u", content[0] );
   epilogue()
 }
 
-int write_red_raum_soll_temp( int temp )
+/* -------------------------------- */
+int write_red_raum_soll_temp( char *value_str )
 {
   uint8_t content[30];
   
@@ -406,17 +426,19 @@ int write_red_raum_soll_temp( int temp )
   return vito_write(0x2307, 1, content);
 }
 
-char * read_neigung( void )
+/* -------------------------------- */
+int read_neigung( char *value_ptr )
 {
-  prologue( 0x27d3, 1 )
-    sprintf( valuestr, "%2.1f", content[0] / 10.0 );
+  prologue( 0x27d3, 1, 6, 6 )
+    sprintf( value_str, "%2.1f", content[0] / 10.0 );
   epilogue()
 }
 
-char * read_niveau( void )
+/* -------------------------------- */
+int read_niveau( char *value_ptr )
 {
-  prologue( 0x27d4, 1 )
-    sprintf( valuestr, "%u", content[0] );
+  prologue( 0x27d4, 1, 6, 5 )
+    sprintf( value_str, "%u", content[0] );
   epilogue()
 }
 
