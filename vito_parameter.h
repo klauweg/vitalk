@@ -4,8 +4,8 @@ struct s_parameter {
   char *p_description;  // Beschreibung des Parameters
   char *p_einheit;      // Einheit (String)
   int p_class;         // Parameterklasse, siehe #define
-  int (*f_read) (char *valuestr);   // Funktion zum lesen aus der Vitodens
-  int (*f_write) (char *valuestr);  // Funktion zum Schreiben in die Vitodens
+  int (*f_read) (char **value_ptr); // Funktion zum lesen aus der Vitodens
+  int (*f_write) (char *value_str); // Funktion zum Schreiben in die Vitodens
 };
 
 // Parameter liste exportieren:
