@@ -198,7 +198,7 @@ int read_k_soll_temp( char **value_ptr )
 int read_ww_soll_temp( char **value_ptr)
 {
   prologue( 0x6300, 1, 6, 6 )
-    sprintf( value_str, "%3.2f", ( content[0] + (content[1] << 8)) / 10.0 );
+    sprintf( value_str, "%u", content[0] );
   epilogue()
 }
 
@@ -469,7 +469,7 @@ const struct s_parameter parameter_liste[] = {
   { "ww_ist_temp_tp", "Warmwasser Ist Temp. Tiefpass", "°C", P_WARMWASSER, &read_ww_ist_temp_tp, NULL },
   { "ww_offset", "Offset Kessel/WW Soll", "K", P_WARMWASSER, &read_ww_offset, NULL },
   { "starts", "Brennerstarts", "", P_BRENNER, &read_starts, NULL },
-  { "starts_h", "Brennerlaufzeit", "h", P_BRENNER, &read_runtime_h, NULL },
+  { "runtime_h", "Brennerlaufzeit", "h", P_BRENNER, &read_runtime_h, NULL },
   { "runtime", "Brennerlaufzeit", "s", P_BRENNER, &read_runtime, NULL },
   { "power", "Brennerleistung", "%", P_BRENNER, &read_power, NULL },
   { "ventil", "Ventilstellung", "", P_HYDRAULIK, &read_ventil, NULL },

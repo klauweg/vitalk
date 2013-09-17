@@ -10,7 +10,8 @@
 #include "vito_io.h"
 #include "telnet.h"
 
-#define NO_VITOCOM
+// This define enables communication with Vitodens:
+#define VITOCOM
 
 // Global:
 fd_set master_fds;  // Aktive Filedeskriptoren für select()

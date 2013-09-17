@@ -49,10 +49,11 @@ static void get_class( int fd, int p_class )
   while( parameter_liste[i].p_name[0] )
     {
       if ( p_class == 0 || p_class == parameter_liste[i].p_class )
-	dprintf(fd, "%02u: %20s: %s\n",
+	dprintf(fd, "%02u: %20s: %s %s\n",
 		parameter_liste[i].p_class,
 		parameter_liste[i].p_name,
-		get_v(parameter_liste[i].p_name)
+		get_v(parameter_liste[i].p_name),
+		get_u(parameter_liste[i].p_name)
 	       );
       i++;
     }
