@@ -127,7 +127,7 @@ int read_errors( char **value_ptr )
       // String der Form 0,0,0,0,0,0,0,0,0,0 basteln:
       value_str[0] = '\0';
       for ( i = 0; i <= 9 ; i++ )
-	sprintf( value_str,"%s%u%c", value_str, content[i], i == 9 ? '\n' : ',' );
+	sprintf( value_str,"%s%u%c", value_str, content[i], i == 9 ? '\0' : ',' );
     }
   
   *value_ptr = value_str;
@@ -471,10 +471,10 @@ const struct s_parameter parameter_liste[] = {
   { "starts", "Brennerstarts", "", P_BRENNER, &read_starts, NULL },
   { "starts_h", "Brennerlaufzeit", "h", P_BRENNER, &read_runtime_h, NULL },
   { "runtime", "Brennerlaufzeit", "s", P_BRENNER, &read_runtime, NULL },
-  { "power", "Brennerleistung", "%%", P_BRENNER, &read_power, NULL },
+  { "power", "Brennerleistung", "%", P_BRENNER, &read_power, NULL },
   { "ventil", "Ventilstellung", "", P_HYDRAULIK, &read_ventil, NULL },
   { "ventil_text", "Ventilstellung", "", P_HYDRAULIK, &read_ventil_text, NULL },
-  { "pump_power", "Pumpenleistung", "%%", P_HYDRAULIK, &read_pump_power, NULL },
+  { "pump_power", "Pumpenleistung", "%", P_HYDRAULIK, &read_pump_power, NULL },
   { "flow", "Volumenstrom", "l/h", P_HYDRAULIK, &read_flow, NULL },
   { "vl_soll_temp", "Vorlauf Solltemperatur", "°C", P_HEIZKREIS, &read_vl_soll_temp, NULL },
   { "raum_soll_temp", "Raum Solltemperatur", "°C", P_HEIZKREIS, &read_raum_soll_temp, &write_raum_soll_temp },
@@ -496,13 +496,22 @@ char * get_v( char *name )
     {
       if ( strcmp( name, parameter_liste[i].p_name ) == 0 ) // Parametername gefunden?
 	{
-	  parameter_liste[i].f_read( &value_ptr ); // Zugriffsfunktion aufrufen
+	  if ( parameter_liste[i].f_read ) // Gibts eine Zugriffsfunktion?
+	    {
+	      if ( parameter_liste[i].f_read( &value_ptr ) < 0 ) // Zugriffsfunktion aufrufen
+		{
+		  value_ptr="READ-ERROR"; // error calling the read function
+		}
+	    }
+	  else
+	    value_ptr="UIF-ERROR"; // Unimplemented Function Error
+	  
 	  return value_ptr; // Stringpointer zurückgeben
 	}
       i++;
     }
   
-  value_ptr="NULL";
+  value_ptr="PNF-ERROR"; // Parameter not Found Error
   return value_ptr;
 }
 
@@ -522,6 +531,6 @@ char * get_u( char *name )
       i++;
     }
   
-  strcpy(value_str,"NULL");
+  strcpy(value_str,"PNF-ERROR"); // Parameter not Found Error
   return value_str;
 }

@@ -130,7 +130,23 @@ int main(int argc, char **argv)
 	}
     }
 #endif
-  printf("TEST: %s\n", get_v("outdoor_temp") );
+  
+//  printf("%s\n", get_v("deviceid"));
+//goto end;
+  
+  int i=0;
+  
+  while( parameter_liste[i].p_name[0] )
+    {
+      printf("%s: %s %s (%s)\n",
+	     parameter_liste[i].p_name,
+	     get_v(parameter_liste[i].p_name),
+	     get_u(parameter_liste[i].p_name),
+	     parameter_liste[i].p_description
+	     );
+      i++;
+    }
+end:
   
   vito_close();
   closetty();
