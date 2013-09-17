@@ -92,7 +92,7 @@ int read_mode_text( char *value_ptr )
 	  break;
 	case 2: strcpy( value_str, "Heizen und Warmwasser" );
 	  break;
-	default: sprintf( value_str, "UNKNOWN: %u", content[0] );
+	default: sprintf( value_str, "UNKNOWN: %s", mode );
 	  break;
 	}
   
@@ -105,7 +105,7 @@ int read_mode_text( char *value_ptr )
 // vito.xml file von ceteris paribus werden 9 byte pro Eintrag
 // gelesen. Ich sehe den Sinn aber nicht? Ich muss mal noch beobachten was passiert
 // wenn mehr als ein Eintrag in der Fehlerliste steht!
-int read_error_history( char *value_ptr )
+int read_errors( char *value_ptr )
 {
   static time_t old_time = 0;
   static char value_str[80] = "";
@@ -126,7 +126,7 @@ int read_error_history( char *value_ptr )
    
       // String der Form 0,0,0,0,0,0,0,0,0,0 basteln:
       value_str[0] = '\0';
-      for ( i = 0, i <= 9 ; i++ )
+      for ( i = 0; i <= 9 ; i++ )
 	sprintf( value_str,"%s%u%c", value_str, content[i], i == 9 ? '\n' : ',' );
     }
   
@@ -135,18 +135,18 @@ int read_error_history( char *value_ptr )
 }
 
 /* -------------------------------- */
-int read_error_history_text( char *value_ptr )
+int read_errors_text( char *value_ptr )
 {
   static char value_str[80*10] = "";
   char errors[80] = "";
   char *error[15];
   int i;
   
-  if ( read_error_history( errors ) < 0 )
+  if ( read_errors( errors ) < 0 )
     return -1;
   
   // parse string from read_error_history():
-  error[0] = strtok( errors, "," )
+  error[0] = strtok( errors, "," );
   for ( i=1; i<=9; i++ )
     error[i] = strtok( NULL, "," );
   
@@ -162,7 +162,7 @@ int read_error_history_text( char *value_ptr )
 
 //////////////////// KESSEL
 /* -------------------------------- */
-int read_K_abgas_temp( char *value_ptr )
+int read_abgas_temp( char *value_ptr )
 {
   prologue( 0x0808, 2, 6, 6 )
     sprintf( value_str, "%3.2f", ( content[0] + (content[1] << 8)) / 10.0 );
@@ -170,7 +170,7 @@ int read_K_abgas_temp( char *value_ptr )
 }
 
 /* -------------------------------- */
-int read_K_ist_temp( char *value_ptr )
+int read_k_ist_temp( char *value_ptr )
 {
   prologue( 0x0802, 2, 6, 6 )
     sprintf( value_str, "%3.2f", ( content[0] + (content[1] << 8)) / 10.0 );
@@ -178,7 +178,7 @@ int read_K_ist_temp( char *value_ptr )
 }
 
 /* -------------------------------- */
-int read_K_istTP_temp( char *value_ptr )
+int read_k_ist_temp_tp( char *value_ptr )
 {
   prologue( 0x0810, 2, 6, 6 )
     sprintf( value_str, "%3.2f", ( content[0] + (content[1] << 8)) / 10.0 );
@@ -186,7 +186,7 @@ int read_K_istTP_temp( char *value_ptr )
 }
 
 /* -------------------------------- */
-int read_K_soll_temp( char *value_ptr )
+int read_k_soll_temp( char *value_ptr )
 {
   prologue( 0x555a, 2, 6, 6 )
     sprintf( value_str, "%3.2f", ( content[0] + (content[1] << 8)) / 10.0 );
@@ -195,7 +195,7 @@ int read_K_soll_temp( char *value_ptr )
 
 //////////////////// WARMWASSER
 /* -------------------------------- */
-int read_WW_soll_temp( char *value_ptr)
+int read_ww_soll_temp( char *value_ptr)
 {
   prologue( 0x6300, 1, 6, 6 )
     sprintf( value_str, "%3.2f", ( content[0] + (content[1] << 8)) / 10.0 );
@@ -203,7 +203,7 @@ int read_WW_soll_temp( char *value_ptr)
 }
 
 /* -------------------------------- */
-int write_WW_soll_temp( char *value_str )
+int write_ww_soll_temp( char *value_str )
 {
   uint8_t content[3];
   int temp;
@@ -220,15 +220,15 @@ int write_WW_soll_temp( char *value_str )
 }
 
 /* -------------------------------- */
-int read_WW_offset( char *value_ptr )
+int read_ww_offset( char *value_ptr )
 {
   prologue( 0x6760, 1, 60, 5 )
-    sprintf( valuestr, "%u", content[0] );
+    sprintf( value_str, "%u", content[0] );
   epilogue()
 }
 
 /* -------------------------------- */
-int read_WW_istTP_temp( char *value_ptr )
+int read_ww_ist_temp_tp( char *value_ptr )
 {
   prologue( 0x0812, 2, 6, 6 )
     sprintf( value_str, "%3.2f", ( content[0] + (content[1] << 8)) / 10.0 );
@@ -236,7 +236,7 @@ int read_WW_istTP_temp( char *value_ptr )
 }
 
 /* -------------------------------- */
-int read_WW_ist_temp( char *value_ptr )
+int read_ww_ist_temp( char *value_ptr )
 {
   prologue( 0x0804, 2, 6, 6 )
     sprintf( value_str, "%3.2f", ( content[0] + (content[1] << 8)) / 10.0 );
@@ -246,7 +246,7 @@ int read_WW_ist_temp( char *value_ptr )
 
 /////////////////// AUSSENTEMPERATUR
 /* -------------------------------- */
-int read_outdoor_TP_temp( char *value_ptr )
+int read_outdoor_temp_tp( char *value_ptr )
 {
   prologue( 0x5525, 2, 6, 6 )
     sprintf( value_str, "%3.2f", ( content[0] + (content[1] << 8)) / 10.0 );
@@ -254,7 +254,7 @@ int read_outdoor_TP_temp( char *value_ptr )
 }
 
 /* -------------------------------- */
-int read_outdoor_smooth_temp( char *value_ptr )
+int read_outdoor_temp_smooth( char *value_ptr )
 {
   prologue( 0x5527, 2, 6, 6 )
     sprintf( value_str, "%3.2f", ( content[0] + (content[1] << 8)) / 10.0 );
@@ -278,7 +278,7 @@ int read_starts( char *value_ptr )
       unsigned int value;
   
       value = content[0] + (content[1] << 8) + (content[2] << 16) + (content[3] << 24);
-      sprintf( valuestr, "%u", value );
+      sprintf( value_str, "%u", value );
     }
   epilogue()
 }
@@ -324,7 +324,7 @@ int read_power( char *value_ptr )
 int read_ventil( char *value_ptr )
 {
   prologue( 0x0a10, 1, 6, 5 )
-    sprintf( valuestr, "%u", content[0] );
+    sprintf( value_str, "%u", content[0] );
   epilogue()
 }
 
@@ -373,7 +373,7 @@ int read_flow( char *value_ptr )
     
 /////////////////// HEIZKREIS
 /* -------------------------------- */
-int read_VL_soll_temp( char *value_ptr )
+int read_vl_soll_temp( char *value_ptr )
 {
   prologue( 0x2544, 2, 6, 6 )
     sprintf( value_str, "%3.2f", ( content[0] + (content[1] << 8)) / 10.0 );
@@ -391,7 +391,10 @@ int read_raum_soll_temp( char *value_ptr )
 /* -------------------------------- */
 int write_raum_soll_temp( char *value_str )
 {
-  uint8_t content[30];
+  uint8_t content[3];
+  int temp;
+  
+  temp = atoi( value_str );
   
   if ( temp < 10 || temp > 30 )
     {
@@ -414,7 +417,10 @@ int read_red_raum_soll_temp( char *value_ptr )
 /* -------------------------------- */
 int write_red_raum_soll_temp( char *value_str )
 {
-  uint8_t content[30];
+  uint8_t content[3];
+  int temp;
+  
+  temp = atoi( value_str );
   
   if ( temp < 10 || temp > 30 )
     {
@@ -445,25 +451,15 @@ int read_niveau( char *value_ptr )
 
 //////////////////////////////////////////////////////////////////////////
 
-// Struktur zur Verwaltung der Parameter
-struct s_parameter {
-  char *p_name;         // Parameter Kurzname
-  char *p_description;  // Beschreibung des Parameters
-  char *p_einheit;      // Einheit (String)
-  int *p_class;         // Parameterklasse, siehe #define oben
-  int (*f_read) (char *valuestr);   // Funktion zum lesen aus der Vitodens
-  int (*f_write) (char *valuestr);  // Funktion zum Schreiben in die Vitodens
-};
-
-const static struct s_parameter parameter_liste[] = {
-  { "deviceid", "Geraeteidentifikation", "", P_GENERAL, &read_deviceid, NULL },
-  { "mode", "Betriebsmodus (numerisch)", "", P_GENERAL, &read_mode, &write_mode },
-  { "mode_text", "Betriebsmodus (text)", "", P_GENERAL, &read_mode_text, NULL },
-  { "errors", "Error History (numerisch)", "", P_GENERAL, &read_errors, NULL },
-  { "errors_text", "Error History (text)", "", P_GENERAL, &read_errors_text, NULL },
-  { "outdoor_temp", "Aussentemperatur", "°C", P_GENERAL, &read_outdoor_temp, NULL },
-  { "outdoor_temp_tp", "Aussentemperatur Tiefpass", "°C", P_GENERAL, &read_outdoor_temp_tp, NULL },
-  { "outdoor_temp_smooth", "Aussentemperatur Gedämpft", "°C", P_GENERAL, &read_outdoor_temp_smooth, NULL },
+const struct s_parameter parameter_liste[] = {
+  { "deviceid", "Geraeteidentifikation", "", P_ALLGEMEIN, &read_deviceid, NULL },
+  { "mode", "Betriebsmodus (numerisch)", "", P_ALLGEMEIN, &read_mode, &write_mode },
+  { "mode_text", "Betriebsmodus (text)", "", P_ALLGEMEIN, &read_mode_text, NULL },
+  { "errors", "Error History (numerisch)", "", P_ALLGEMEIN, &read_errors, NULL },
+  { "errors_text", "Error History (text)", "", P_ALLGEMEIN, &read_errors_text, NULL },
+  { "outdoor_temp", "Aussentemperatur", "°C", P_ALLGEMEIN, &read_outdoor_temp, NULL },
+  { "outdoor_temp_tp", "Aussentemperatur Tiefpass", "°C", P_ALLGEMEIN, &read_outdoor_temp_tp, NULL },
+  { "outdoor_temp_smooth", "Aussentemperatur Gedämpft", "°C", P_ALLGEMEIN, &read_outdoor_temp_smooth, NULL },
   { "k_ist_temp", "Kessel Ist Temperatur", "°C", P_KESSEL, &read_k_ist_temp, NULL },
   { "k_ist_temp_tp", "Kessel Ist T. nach Tiefpass", "°C", P_KESSEL, &read_k_ist_temp_tp, NULL },
   { "k_soll_temp", "Kessel Soll Temperatur", "°C", P_KESSEL, &read_k_soll_temp, NULL },
@@ -485,7 +481,47 @@ const static struct s_parameter parameter_liste[] = {
   { "red_raum_soll_temp", "Reduzierte Raum Solltemperatur", "°C", P_HEIZKREIS, &read_red_raum_soll_temp, &write_red_raum_soll_temp },
   { "niveau", "Heizkurve Niveau", "K", P_HEIZKREIS, &read_niveau, NULL },
   { "neigung", "Heizkurve Neigung", "", P_HEIZKREIS, &read_neigung, NULL },
-  { "", "", 0, NULL, NULL }
+  { "", "", "", 0, NULL, NULL }
 };
 
+/////////////////////////////////////////////////////////////////////////////////
+
+// Parameter Wert nachschlagen nach Name
+char * get_v( char *name )
+{
+  int i=0;
+  char *value_ptr = NULL;
   
+  while( parameter_liste[i].p_name[0] ) // Ende der Liste ?
+    {
+      if ( strcmp( name, parameter_liste[i].p_name ) == 0 ) // Parametername gefunden?
+	{
+	  parameter_liste[i].f_read( value_ptr ); // Zugriffsfunktion aufrufen
+	  return value_ptr; // Stringpointer zurückgeben
+	}
+      i++;
+    }
+  
+  value_ptr="NULL";
+  return value_ptr;
+}
+
+// Einheit für Parameter nachschlagen
+char * get_u( char *name )
+{
+  int i=0;
+  static char value_str[30]="";
+  
+  while( parameter_liste[i].p_name[0] ) // Ende der Liste
+    {
+      if ( strcmp( name, parameter_liste[i].p_name ) == 0 ) // Parametername gefunden?
+	{
+	  strcpy( value_str, parameter_liste[i].p_einheit ); // Einheit kopieren
+	  return value_str; // Einheit zurückgeben
+	}
+      i++;
+    }
+  
+  strcpy(value_str,"NULL");
+  return value_str;
+}

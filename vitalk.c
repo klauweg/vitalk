@@ -8,9 +8,8 @@
 #include <signal.h>
 #include <unistd.h>
 #include <time.h>
-#include "vito_parameter.h"
 #include "vito_io.h"
-#include "mysql.h"
+#include "vito_parameter.h"
 #include "text_log.h"
 #include "telnet.h"
 
@@ -34,7 +33,7 @@ int main(int argc, char **argv)
   int text_log_intervall = 0;
   
   // Option processing with GNU getopt
-  while ((c = getopt (argc, argv, "H:U:P:D:hft:s:")) != -1)
+  while ((c = getopt (argc, argv, "hft:s:")) != -1)
     switch(c)
       {
       case 'h':
@@ -42,28 +41,11 @@ int main(int argc, char **argv)
 	       " (c) by KWS, 2013\n\n"
 	       "Usage: vitalk [option...]\n"
 	       "  -h            give this help list\n"
-	       "  -H <host>     set MySQL Hostname for Logging\n"
-	       "  -U <user>     set MySQL Username for Logging\n"
-	       "  -P <password> set MySQL Password for Logging\n"
-	       "  -D <database> set MySQL Database Name for Logging\n"
-	       "                wenn nicht angegeben, wird nicht in Datenbank geloggt.\n"
 	       "  -s <log_t>    aktiviere Parameterwertausgabe auf stdout\n"
 	       "  -f            activate framedebugging\n"
 	       "  -t <tty_dev>  set tty Devicename\n"
                );
 	exit(1);
-      case 'H':
-	my_hostname = optarg;
-	break;
-      case 'U':
-	my_username = optarg;
-	break;
-      case 'P':
-	my_password = optarg;
-	break;
-      case 'D':
-	my_database = optarg;
-	break;
       case 's':
 	sscanf( optarg, "%d", &text_log_intervall);
 	break;
@@ -99,7 +81,7 @@ int main(int argc, char **argv)
     }
 
   /////////////////////////////////////////////////////////////////////////////
-
+#if 0
   // Main event loop (select()):
   struct timeval *timeout;
   timeout = (struct timeval *) malloc( sizeof(struct timeval) );
@@ -113,11 +95,11 @@ int main(int argc, char **argv)
   // Wir machen das nicht in telnet_init, weil u.U. noch weitere TCP Dienste
   // hinzukommen könnten und dann käme es auf die Reihenfolge der Initialisierung an.
   FD_ZERO(&master_fds);
-  
+#endif  
   opentty( tty_devicename );
   
   vito_init();
-
+#if 0
   // Das machen wir sicherheitshalber erst nach vito_init(), für den Fall dass
   // ein client sehr schnell ist:
   telnet_init(&master_fds);
@@ -145,13 +127,13 @@ int main(int argc, char **argv)
 		  print_all(); // Parameter auf stdout ausgeben
 		}
 	    }
-
-	  if ( my_database )
-	    { // Wenn Datenbankname gesetzt, Logging in die Datenbank:
-	      my_log_task();
-	    }
 	}
     }
-
+#endif
+  printf("TEST: %s\n", get_v("outdoor_temp") );
+  
+  vito_close();
+  closetty();
+  return 0;
 }
 
