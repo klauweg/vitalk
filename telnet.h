@@ -1,2 +1,9 @@
-void telnet_init(fd_set *master_fds );
-void telnet_task(fd_set *master_fds, fd_set *read_fds);
+
+#define PORT 83
+#define MAX_DESCRIPTORS 10
+#define TELNET_BUFFER_SIZE 70
+
+// Prototypes:
+void telnet_init( void );
+void telnet_task( void );
+

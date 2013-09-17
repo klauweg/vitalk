@@ -7,11 +7,17 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include "vito_parameter.h"
+#include "telnet.h"
 
 #define PORT 83
+#define MAX_TELNET_SERVER 10
+#define TELNET_BUFFER_SIZE 70
 
-static int fd_listener = 0; /* listening socket descriptor */
-static int fd_telnet = 0; /* File Descriptor for Telnet */
+extern fd_set master_fds; /* file descriptor list for select() */
+extern fd_set read_fds;   /* ergebnis des select() Aufrufs */
+extern int fdmax; /* größter benutzter Filedescriptor */
+
+static int fd_listener; /* listening socket descriptor */
 static struct sockaddr_in serveraddr; /* server address */
 static struct sockaddr_in clientaddr; /* client address */
 
@@ -19,18 +25,14 @@ static struct sockaddr_in clientaddr; /* client address */
 const char *commands[] =
 { "help",              // 0
   "h",                 // 1
-  "state",             // 2
-  "s",                 // 3
-  "errors",            // 4
-  "e",                 // 5
-  "numeric_errors",    // 6
-  "set_mode",          // 7
-  "set_ww",            // 8
-  "set_raum",          // 9
-  "set_red_raum",      // 10
+  "get",               // 2
+  "g",                 // 3
+  "set",               // 4
+  "s",                 // 5
   "\0"
 };
 
+#if 0
 // Hilfstext
 static void print_help( void )
 {
@@ -51,64 +53,26 @@ static void print_help( void )
 	  "\n"
     );
 }
+# endif
 
-// Debug Ausgabe aller Parameter
-static void print_all( void )
+// Init Telnet Socket:
+void telnet_init( void )
 {
-  dprintf(fd_telnet, "ALLGEMEIN:\n");
-  dprintf(fd_telnet, " Device Id: %s, Modus Numerisch: %s, Modus: %s         \n",
-	 read_deviceid(), read_mode_numeric(), read_mode() );
-
-  dprintf(fd_telnet, "KESSEL:\n");
-  dprintf(fd_telnet, " Kessel Soll Temperatur: %s °C     \n", read_K_soll_temp() );
-  dprintf(fd_telnet, " Kessel ist: %s °C, ist TP: %s °C      \n", read_K_ist_temp(), read_K_istTP_temp() );
-  dprintf(fd_telnet, " Kessel Abgastemperatur: %s °C       \n", read_K_abgas_temp() );
-
-  dprintf(fd_telnet, "WARMWASSER:\n");
-  dprintf(fd_telnet, " Solltemperatur: %s °C    \n", read_WW_soll_temp() );
-  dprintf(fd_telnet, " Vorlaufoffset: %s K     \n", read_WW_offset() );
-  dprintf(fd_telnet, " ist: %s °C, ist Tiefpass: %s °C     \n", read_WW_ist_temp(), read_WW_istTP_temp() );
+  FD_ZERO(&master_fds);
   
-  dprintf(fd_telnet, "AUSSENTEMPERATUR\n");
-  dprintf(fd_telnet, " ist: %s °C, ist Tiefpass: %s °C, ist gedämpft: %s °C      \n",
-	 read_outdoor_temp(), read_outdoor_TP_temp(), read_outdoor_smooth_temp() );
-
-  dprintf(fd_telnet, "BRENNER:\n");
-  dprintf(fd_telnet, " Starts: %s, Laufzeit: %s s, Laufzeit: %s h     \n",
-	 read_starts(), read_runtime(), read_runtime_h() );
-  dprintf(fd_telnet, " Leistung: %s %%     \n", read_power() );
-  
-  dprintf(fd_telnet, "HYDRAULIK:\n");
-  dprintf(fd_telnet, " Ventilstellung Numerisch: %s, Stellung: %s       \n",
-	 read_ventil_numeric(), read_ventil() );
-  dprintf(fd_telnet, " Pumpe: %s %%        \n", read_pump_power() );
-  dprintf(fd_telnet, " Volumenstrom: %s l/h        \n", read_flow() );
-      
-  dprintf(fd_telnet, "HEIZKREISTEMPERATUREN:\n");
-  dprintf(fd_telnet, " Vorlaufsoll: %s °C, Raumsoll: %s °C, red. Raumsoll %s °C     \n",
-	 read_VL_soll_temp(), read_raum_soll_temp(), read_red_raum_soll_temp() );
-  dprintf(fd_telnet, " Neigung: %s,  Niveau: %s   \n", read_neigung(), read_niveau() );
-  dprintf(fd_telnet, "\n");
-}
-
-// Wird einmalig aufgerufen, vorwiegend um das Telnet Socket zu initialisieren.
-// Es muss darauf geachtet werden, dass masters_fds vor dem Aufruf gelöscht wird und nicht
-// danach.
-void telnet_init(fd_set *master_fds )
-{
   /* create socket */
   if((fd_listener = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0)) == -1)
     {
-      fprintf( stderr, "Error creating Socket!\n");
+      fprintf( stderr, "Error creating Telnet Socket!\n");
       exit(1);
     }
 
   // Set REUSEADDR option
-  // Sonst kann man nach einem Programmabbruch längere Zeit nicht neu starten
+  // Sonst kann man nach einem Programmabbruch längere Zeit nicht neu starten:
   const int optVal = 1;
   if ( setsockopt(fd_listener, SOL_SOCKET, SO_REUSEADDR, (void*) &optVal, sizeof(int)) == -1 )
     {
-      fprintf( stderr, "Error setting Socket Options!\n");
+      fprintf( stderr, "Error setting Telnet Socket Options!\n");
       exit(1);
     }
   
@@ -119,13 +83,14 @@ void telnet_init(fd_set *master_fds )
   memset(&(serveraddr.sin_zero), '\0', sizeof(serveraddr.sin_zero) );
   if(bind(fd_listener, (struct sockaddr *)&serveraddr, sizeof(serveraddr)) == -1)
     {
-      fprintf( stderr, "Error bind Socket: %s\n", strerror(errno));
+      fprintf( stderr, "Error bind Telnet Socket: %s\n", strerror(errno));
       exit(1);
     }
+  
   /* listen */
-  if(listen(fd_listener, 5) == -1) // "5" = listen backlog
+  if(listen(fd_listener, 10) == -1) // "10" = listen backlog
     {
-      fprintf( stderr, "Error listen Socket!\n");
+      fprintf( stderr, "Error listen on Telnet Socket!\n");
       exit(1);
     }
   else
@@ -134,64 +99,73 @@ void telnet_init(fd_set *master_fds )
     }
   
   /* add the listener to the master set */
-  FD_SET(fd_listener, master_fds);
+  FD_SET(fd_listener, &master_fds);
+  fdmax = fd_listener; // Vorerst ist das nur der Listener
 }
 
 // Folgende Funktion wird periodisch nach der select() Rückkehr aufgerufen.
-// Übergeben werden die Descriptormengen der aktuell aktiven Descriptoren
-// (master_fds) und die von select() zurückgegebenen (read_fds).
-// In master_fds werden ggf. neue Descriptoren eingetragen.
-void telnet_task(fd_set *master_fds, fd_set *read_fds)
+// Es muss die von select() zurückgegebene Descriptormenge übergeben werden:
+void telnet_task( void )
 {
-  static char telnet_buf[2048]; /* buffer for client data */
-  static int telnet_buf_ptr;
-  
-  int fd_new;
-  char command[80];
-  int value;
   int i;
-  
-  // Gibt es eine neue Verbindungsanfrage?
-  if ( FD_ISSET( fd_listener, read_fds ) )
+  int fd_new;
+  static char buffers[MAX_TELNET_SERVER][TELNET_BUFFER_SIZE];
+  static int buf_ptr[MAX_TELNET_SERVER];
+  int result;
+
+  // Traverse over all possible Filedescriptors:
+  for(i = 0; i <= fdmax; i++)
     {
-      socklen_t addrlen = sizeof(clientaddr); // wird als pointer gebraucht
-      if((fd_new = accept(fd_listener, (struct sockaddr *)&clientaddr, &addrlen)) == -1)
-	{
-	  fprintf( stderr, "Error accepting Connection!\n");
-	  exit(1);
-	}
-      else
-	{
-	  if ( fd_telnet == 0 )
-	    { // Verbindung akzeptieren, wenn es noch keine gibt:
-	      fd_telnet = fd_new;
-	      FD_SET(fd_telnet , master_fds); /* add to master set */
-	      printf("New Telnet connection from %s\n",
-		     inet_ntoa(clientaddr.sin_addr) );
-	      telnet_buf_ptr = 0; // Pufferzeiger initialisieren
-	      dprintf( fd_telnet, "Welcome at vitalk, the Vitodens telnet Interface.\n");
+      if( FD_ISSET(i, &read_fds) )
+	{ // Neue Verbindung?
+	  if( i == fd_listener )
+	    { // Neue Verbindung!
+	      socklen_t addrlen = sizeof(clientaddr);
+	      if( ( fd_new = accept(fd_listener, (struct sockaddr *)&clientaddr, &addrlen)) == -1)
+		  fprintf(stderr, "Error accepting Connection!\n");
+	      else
+		{
+		  if ( fd_new > MAX_TELNET_SERVER )
+		    {
+		      fprintf(stderr, "Max Number of Telnet Connections reached!\n");
+		      close( fd_new );
+		    }
+		  else
+		    {
+		      fprintf(stderr, "New connection from %s on socket %d\n",
+			      inet_ntoa(clientaddr.sin_addr), fd_new);
+		      FD_SET(fd_new, &master_fds); /* add to master set */
+		      buffers[i][0]='\0';
+		      buf_ptr[i] = 0;
+		      if(fd_new > fdmax) // neuer größter Filedescriptor?
+			fdmax = fd_new;
+		      dprintf( fd_new, "Welcome at vitalk, the Vitodens telnet Interface. (nr. %u)\n", fd_new);
+		    }
+		}
 	    }
 	  else
-	    { // Neue Verbindung ablehnen, wenn schon eine existiert:
-	      printf("New Telnet connection declined.\n");
-	      close( fd_new );
+	    { // Daten von einem Client:
+	      result = recv(i, &buffers[i][buf_ptr[i]], 1, 0);
+	      if ( result <= 0 )
+		{
+		  if ( result < 0 )
+		    fprintf( stderr, "recv() error: %s\n", strerror(errno));
+		  // Verbindung wurde beendet:
+		  printf("Socket %d hung up.\n", i);
+		  close(i);
+		  FD_CLR(i, &master_fds);
+		}
+	      else
+		{ // Echte Daten auswerten:
+		  buf_ptr[i]++;
+		  fprintf(stderr,"%s\n", buffers[i]);
+		}
 	    }
 	}
     }
+}
 
-  // Gibt es Daten aus der Telnet Verbindung?
-  if ( FD_ISSET( fd_telnet, read_fds) )
-    {
-      // Wir lesen hier immer nur ein Zeichen. Das ist zwar wohl nicht sehr
-      // effizient aber vereinfacht das Pufferhandling erheblich.
-      if( recv(fd_telnet, telnet_buf + telnet_buf_ptr, 1, 0 ) <= 0 )
-	{ /* got error or connection closed by client */
-	  close(fd_telnet); /* close it */
-	  FD_CLR(fd_telnet, master_fds); /* remove from master set */
-	  fd_telnet = 0; // Damit neue Verbindungen angenommen werden können
-	  printf("Telnet Connection closed.\n");
-	}
-      else
+#if 0
 	{ // Hier wurde ein Zeichen gelesen:
 	  telnet_buf_ptr++;
 	  telnet_buf[telnet_buf_ptr]='\0';
@@ -274,3 +248,4 @@ void telnet_task(fd_set *master_fds, fd_set *read_fds)
 	}
     }
 }
+#endif
