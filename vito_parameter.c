@@ -452,11 +452,11 @@ int read_niveau( char **value_ptr )
 //////////////////////////////////////////////////////////////////////////
 
 const struct s_parameter parameter_liste[] = {
+  { "errors", "Error History (numerisch)", "", P_ERRORS, &read_errors, NULL },
+  { "errors_text", "Error History (text)", "", P_ERRORS, &read_errors_text, NULL },
   { "deviceid", "Geraeteidentifikation", "", P_ALLGEMEIN, &read_deviceid, NULL },
   { "mode", "Betriebsmodus (numerisch)", "", P_ALLGEMEIN, &read_mode, &write_mode },
   { "mode_text", "Betriebsmodus (text)", "", P_ALLGEMEIN, &read_mode_text, NULL },
-  { "errors", "Error History (numerisch)", "", P_ALLGEMEIN, &read_errors, NULL },
-  { "errors_text", "Error History (text)", "", P_ALLGEMEIN, &read_errors_text, NULL },
   { "outdoor_temp", "Aussentemperatur", "°C", P_ALLGEMEIN, &read_outdoor_temp, NULL },
   { "outdoor_temp_tp", "Aussentemperatur Tiefpass", "°C", P_ALLGEMEIN, &read_outdoor_temp_tp, NULL },
   { "outdoor_temp_smooth", "Aussentemperatur Gedämpft", "°C", P_ALLGEMEIN, &read_outdoor_temp_smooth, NULL },

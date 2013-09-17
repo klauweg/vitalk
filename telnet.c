@@ -9,13 +9,8 @@
 #include "vito_parameter.h"
 #include "telnet.h"
 
-#define PORT 83
-#define MAX_TELNET_SERVER 10
-#define TELNET_BUFFER_SIZE 70
-
 extern fd_set master_fds; /* file descriptor list for select() */
 extern fd_set read_fds;   /* ergebnis des select() Aufrufs */
-extern int fdmax; /* größter benutzter Filedescriptor */
 
 static int fd_listener; /* listening socket descriptor */
 static struct sockaddr_in serveraddr; /* server address */
@@ -23,37 +18,44 @@ static struct sockaddr_in clientaddr; /* client address */
 
 // Per telnet aufrufbare Befehle:
 const char *commands[] =
-{ "help",              // 0
-  "h",                 // 1
-  "get",               // 2
-  "g",                 // 3
-  "set",               // 4
-  "s",                 // 5
-  "\0"
+{  "help",              // 0
+   "h",                 // 1
+   "get",               // 2
+   "g",                 // 3
+   "set",               // 4
+   "s",                 // 5
+   "list",              // 6
+   "\0"
 };
 
-#if 0
 // Hilfstext
-static void print_help( void )
+static void print_help( int fd )
 {
-  dprintf(fd_telnet,
+  dprintf(fd,
 	  "Short Help Text:\n"
-	  "  h, help        - This Help Text\n"
-	  "  s, state       - Summary of Parameter Values\n"
-	  "  e, errors      - Error History\n"
-          "  numeric_errors - Error History in numeric Format\n"
-	  "Changeable Parameters:\n"
-	  "  set_mode       - Betriebsmodus setzen\n"
-	  "        0 == Abschaltbetrieb\n"
-	  "        1 == Nur Warmwasser\n"
-	  "        2 == Heizen und Warmwasser\n"
-	  "  set_ww         - Warmwassertemperatur in Grad Celsius setzen\n"
-	  "  set_raum       - Raumtemperatur in Grad Celsius setzen\n"
-	  "  set_red_raum   - reduzierte Raumtemperatur in Grad Celsius setzen\n"
-	  "\n"
+	  "  h, help           - This Help Text\n"
+	  "  list [class]      - Show parameter List\n"
+	  "\n\n"
     );
 }
-# endif
+
+// Liste aller Parameter
+static void print_listall( int fd, int p_class )
+{
+  int i=0;
+  
+  while( parameter_liste[i].p_name[0] )
+    {
+      if ( p_class == 0 || p_class == parameter_liste[i].p_class )
+	dprintf(fd, "%02u: %s: %s\n",
+		parameter_liste[i].p_class,
+		parameter_liste[i].p_name,
+		parameter_liste[i].p_description
+	       );
+      i++;
+    }
+  dprintf(fd, "\n");
+}
 
 // Init Telnet Socket:
 void telnet_init( void )
@@ -100,7 +102,6 @@ void telnet_init( void )
   
   /* add the listener to the master set */
   FD_SET(fd_listener, &master_fds);
-  fdmax = fd_listener; // Vorerst ist das nur der Listener
 }
 
 // Folgende Funktion wird periodisch nach der select() Rückkehr aufgerufen.
@@ -109,12 +110,13 @@ void telnet_task( void )
 {
   int i;
   int fd_new;
-  static char buffers[MAX_TELNET_SERVER][TELNET_BUFFER_SIZE];
-  static int buf_ptr[MAX_TELNET_SERVER];
+  static char buffers[MAX_DESCRIPTOR + 1][TELNET_BUFFER_SIZE];
+  static int buf_ptr[MAX_DESCRIPTOR + 1];
   int result;
-
+  int cnum;
+  
   // Traverse over all possible Filedescriptors:
-  for(i = 0; i <= fdmax; i++)
+  for(i = 0; i <= MAX_DESCRIPTOR; i++)
     {
       if( FD_ISSET(i, &read_fds) )
 	{ // Neue Verbindung?
@@ -125,7 +127,7 @@ void telnet_task( void )
 		  fprintf(stderr, "Error accepting Connection!\n");
 	      else
 		{
-		  if ( fd_new > MAX_TELNET_SERVER )
+		  if ( fd_new > MAX_DESCRIPTOR )
 		    {
 		      fprintf(stderr, "Max Number of Telnet Connections reached!\n");
 		      close( fd_new );
@@ -137,8 +139,6 @@ void telnet_task( void )
 		      FD_SET(fd_new, &master_fds); /* add to master set */
 		      buffers[i][0]='\0';
 		      buf_ptr[i] = 0;
-		      if(fd_new > fdmax) // neuer größter Filedescriptor?
-			fdmax = fd_new;
 		      dprintf( fd_new, "Welcome at vitalk, the Vitodens telnet Interface. (nr. %u)\n", fd_new);
 		    }
 		}
@@ -156,96 +156,49 @@ void telnet_task( void )
 		  FD_CLR(i, &master_fds);
 		}
 	      else
-		{ // Echte Daten auswerten:
+		{ // Echte Daten empfangen:
 		  buf_ptr[i]++;
-		  fprintf(stderr,"%s\n", buffers[i]);
+		  buffers[i][buf_ptr[i]]='\0';
+		  if ( ( strchr(buffers[i], '\n') ) || // Newline im Puffer?
+		       ( buf_ptr[i] > TELNET_BUFFER_SIZE - 4 ) ) // Oder Puffer "ziemlich" voll?
+		    { // Dann werten wir das aus:
+		      buf_ptr[i] = 0; // Für die nächste Pufferfüllung
+		      
+		      char command[24] = "";
+		      char value1[24] = "";
+		      char value2[24] = "";
+		      
+		      sscanf( buffers[i], "%20s %20s %20s %*s\n", command, value1, value2 );
+		      
+		      // Empty socket input buffer:
+		      while ( recv(i, buffers[i], TELNET_BUFFER_SIZE, MSG_DONTWAIT ) > 0);
+			      
+		      // Suche nach bekanntem Befehl:
+		      for ( cnum=0; commands[cnum][0]; cnum++ ) 
+			{
+			  if ( strcmp( commands[cnum], command ) == 0 )
+			    switch( cnum )
+			      {
+			      case 0:
+			      case 1:
+				print_help(i);
+				break;
+			      case 2:
+			      case 3:
+				//get
+				break;
+			      case 4:
+			      case 5:
+				//set
+				break;
+			      case 6:
+				print_listall(i, atoi(value1));
+				break;
+			      }
+			}
+		    }
 		}
 	    }
 	}
     }
 }
-
-#if 0
-	{ // Hier wurde ein Zeichen gelesen:
-	  telnet_buf_ptr++;
-	  telnet_buf[telnet_buf_ptr]='\0';
-	  if ( ( strchr(telnet_buf, '\n') ) || // Newline im Puffer?
-	       ( telnet_buf_ptr > sizeof(telnet_buf) - 4 ) ) // Oder Puffer ziemlich voll?
-	    { // Dann werten wir das aus:
-	      telnet_buf_ptr = 0; // Wird erst für neue Zeile wieder gebraucht
-	      telnet_buf[75]='\0'; // Länger kann ein Befehl eh nicht sein
-	      command[0] = '\0';
-	      value = 0;
-	      sscanf(telnet_buf, "%s %d", command, &value);
-	      // Suche nach bekanntem Befehl:
-	      for ( i=0; commands[i][0]; i++ ) 
-		{
-		  if ( strcmp( commands[i], command ) == 0 )
-		    switch( i )
-		      {
-		      case 0:
-		      case 1:
-			print_help();
-			break;
-		      case 2:
-		      case 3:
-			print_all();
-			break;
-		      case 4:
-		      case 5:
-			dprintf(fd_telnet, "FEHLERSPEICHER:\n");
-			dprintf(fd_telnet,  "%s", read_error_history() );
-			dprintf(fd_telnet, "\n");
-			break;
-		      case 6:
-			dprintf(fd_telnet, "FEHLERSPEICHER (numerisch):\n");
-			dprintf(fd_telnet,  "%s", read_error_history_numeric() );
-			dprintf(fd_telnet, "\n");
-			break;
-		      case 7:
-			dprintf(fd_telnet, "Setting mode: ");
-			if ( value >= 0 && value <= 2 )
-			  {
-			    write_mode_numeric( value );
-			    dprintf(fd_telnet, "done.\n");
-			  }
-			else
-			  dprintf(fd_telnet, "error!\n");
-			break;
-		      case 8:
-			dprintf(fd_telnet, "Setting WW temp: ");
-			if ( value >= 5 && value <= 60 )
-			  {
-			    write_WW_soll_temp( value );
-			    dprintf(fd_telnet, "done.\n");
-			  }
-			else
-			  dprintf(fd_telnet, "error!\n");
-			break;
-		      case 9:
-			dprintf(fd_telnet, "Setting room temp: ");
-			if ( value >= 10 && value <= 30 )
-			  {
-			    write_raum_soll_temp( value );
-			    dprintf(fd_telnet, "done.\n");
-			  }
-			else
-			  dprintf(fd_telnet, "error!\n");
-			break;
-		      case 10:
-			dprintf(fd_telnet, "Setting reduced room temp: ");
-			if ( value >= 10 && value <= 30 )
-			  {
-			    write_red_raum_soll_temp( value );
-			    dprintf(fd_telnet, "done.\n");
-			  }
-			else
-			  dprintf(fd_telnet, "error!\n");
-			break;
-		      }
-		}
-	    }
-	}
-    }
-}
-#endif

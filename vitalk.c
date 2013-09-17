@@ -15,7 +15,6 @@
 // Global:
 fd_set master_fds;  // Aktive Filedeskriptoren für select()
 fd_set read_fds;    // Ergebnis des select() - Aufrufs
-int fdmax;         // maximaler benutzer Filedescriptor
 
 // Signal Handler:
 void exit_handler( int exitcode )
@@ -87,30 +86,9 @@ int main(int argc, char **argv)
     {
       read_fds = master_fds;
       
-      if ( select ( fdmax+1, &read_fds, NULL, NULL, NULL ) > 0 )  // SELECT
+      if ( select ( MAX_DESCRIPTOR+1, &read_fds, NULL, NULL, NULL ) > 0 )  // SELECT
 	  telnet_task();
     }
 
-  
-#if 0  
-  int i=0;
-  
-  while( parameter_liste[i].p_name[0] )
-    {
-      printf("%s: %s %s (%s)\n",
-	     parameter_liste[i].p_name,
-	     get_v(parameter_liste[i].p_name),
-	     get_u(parameter_liste[i].p_name),
-	     parameter_liste[i].p_description
-	     );
-      i++;
-    }
-#endif
-  
-#ifdef VITOCOM
-  vito_close();
-  closetty();
-#endif
-  return 0;
 }
 

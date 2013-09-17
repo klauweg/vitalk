@@ -13,12 +13,13 @@ extern const struct s_parameter parameter_liste[];
 
 // Parameterklassen:
 #define P_ALLE       0
-#define P_ALLGEMEIN  1
-#define P_KESSEL     2
-#define P_WARMWASSER 3
-#define P_HEIZKREIS  4
-#define P_BRENNER    5
-#define P_HYDRAULIK  6
+#define P_ERRORS     1
+#define P_ALLGEMEIN  2
+#define P_KESSEL     3
+#define P_WARMWASSER 4
+#define P_HEIZKREIS  5
+#define P_BRENNER    6
+#define P_HYDRAULIK  7
 
 // Prototypen:
 char * get_v( char *name );
