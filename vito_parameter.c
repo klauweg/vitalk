@@ -542,3 +542,29 @@ char * get_u( char *name )
   strcpy(value_str,"PNF-ERROR"); // Parameter not Found Error
   return value_str;
 }
+
+// Parameterwert setzen
+char * set_v( char*name, char *value )
+{
+  int i=0;
+  
+    while( parameter_liste[i].p_name[0] ) // Ende der Liste ?
+    {
+      if ( strcmp( name, parameter_liste[i].p_name ) == 0 ) // Parametername gefunden?
+	{
+	  if ( parameter_liste[i].f_write ) // Gibts eine Schreibfunktion?
+	    {
+	      if ( parameter_liste[i].f_write( value ) < 0 )
+		return "Error setting Parameter!";
+	      else
+		return "Ok.";
+	    }
+	  else
+	    return "Read only!";
+	}
+      i++;
+    }
+
+  return "Unknown Parameter!";
+}
+

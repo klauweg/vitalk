@@ -26,6 +26,7 @@ const char *commands[] =
    "s",                 // 5
    "list",              // 6
    "gc",                // 7
+   "gvu",               // 8
    "\0"
 };
 
@@ -39,6 +40,7 @@ static void print_help( int fd )
 	  "  g, get <p_name>         - Query Parameter\n"
 	  "  s, set <p_name> <value> - Set Parameter\n"
 	  "  gc <class>              - Query a class of Parameters\n"
+	  "  gvu <p_name>            - Get Value of Parameter with Unit\n"
 	  "\n"
     );
 }
@@ -205,17 +207,20 @@ void telnet_task( void )
 				break;
 			      case 2:
 			      case 3:
-				//get
+				dprintf( i, "%s\n", get_v(value1) );
 				break;
 			      case 4:
 			      case 5:
-				//set
+				dprintf( i, "%s\n", set_v(value1, value2) );
 				break;
 			      case 6:
 				print_listall( i, atoi(value1) );
 				break;
 			      case 7:
 				get_class( i, atoi(value1) );
+				break;
+			      case 8:
+				dprintf( i, "%s %s\n", get_v(value1), get_u(value1) );
 				break;
 			      }
 			}

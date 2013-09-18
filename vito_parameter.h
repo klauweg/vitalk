@@ -24,4 +24,5 @@ extern const struct s_parameter parameter_liste[];
 // Prototypen:
 char * get_v( char *name );
 char * get_u( char *name );
+char * set_v( char *name, char *value );
 
