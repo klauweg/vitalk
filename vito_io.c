@@ -9,6 +9,10 @@
 #include <stdint.h>
 #include "vito_io.h"
 
+// Maximal zulässige aufeinanderfolgende Übertragungsfehler bevor ein
+// Programmabbruch erfolgt:
+#define MAX_ERRORS 3
+
 // Globals:
 static int fd_tty = 0; // Filedescriptor serielle Schnittstelle
 static int errorcount = 0; // Abbruch bei zu häufigen Fehlern
@@ -287,50 +291,56 @@ int vito_read( int location, int size, uint8_t *vitomem )
 
   // Anfrage ausführen:
   result_len = vito_meeting( command, 5, result );
+
+  flag = 0;
   
   // Fehler von der vito_meeting() Funktion übernehmen:
   if ( result_len < 0 )
     {
       fprintf( stderr, "READ: failed. (error in meeting)\n" );
-      bzero( vitomem, size );
-      if ( errorcount++ > 10 ) exit(2);
-      return -1;
+      flag = 1;
+    }
+  else
+    {
+      // Wir untersuchen die empfangene Payload auf plausibilität:
+      if ( result_len != 5 + size)
+	{
+	  fprintf( stderr, "READ: Wrong RCVD Payload length!\n" );
+	  flag = 2;
+	}
+      if ( (command[2] != result[2]) || (command[3] != result[3]) )
+	{
+	  fprintf( stderr, "READ: Wrong Address received!\n" );
+	  flag = 2;
+	}
+      if ( result[0] != 0x01 )
+	{
+	  fprintf( stderr, "READ: Wrong Message Type received!\n" );
+	  flag = 2;
+	}
+      if ( result[1] != 0x01 )
+	{
+	  fprintf( stderr, "READ: Wrong Access Type received!\n" );
+	  flag = 2;
+	}
+      if ( command[4] != result[4] )
+	{
+	  fprintf( stderr, "READ: Wrong Memory Size received!\n" );
+	  flag = 2;
+	}
     }
   
-  // Wir untersuchen die empfangene Payload auf plausibilität:
-  flag = 0;
-  if ( result_len != 5 + size)
-    {
-      fprintf( stderr, "READ: Wrong RCVD Payload length!\n" );
-      flag = 1;
-    }
-  if ( (command[2] != result[2]) || (command[3] != result[3]) )
-    {
-      fprintf( stderr, "READ: Wrong Address received!\n" );
-      flag = 1;
-    }
-  if ( result[0] != 0x01 )
-    {
-      fprintf( stderr, "READ: Wrong Message Type received!\n" );
-      flag = 1;
-    }
-  if ( result[1] != 0x01 )
-    {
-      fprintf( stderr, "READ: Wrong Access Type received!\n" );
-      flag = 1;
-    }
-  if ( command[4] != result[4] )
-    {
-      fprintf( stderr, "READ: Wrong Memory Size received!\n" );
-      flag = 1;
-    }
-  
-  if (flag)
-    {
+  if ( flag == 2 )
+    {    
       fprintf( stderr, "READ: Received Payload " );
       print_hex( result, result_len );
+    }
+  
+  if ( flag > 0 )
+    {
       bzero( vitomem, size );
-      if ( errorcount++ > 10 ) exit(2);
+      if ( errorcount++ > MAX_ERRORS )
+	exit(2);
       return -1;
     }
   
@@ -365,47 +375,54 @@ int vito_write( int location, int size, uint8_t *vitomem )
   // Anfrage ausführen:
   result_len = vito_meeting( command, 5 + size, result );
   
+  flag = 0;
+  
   // Fehler von der vito_meeting() Funktion
   if ( result_len < 0 )
     {
       fprintf( stderr, "WRITE: failed. (error in meeting)\n" );
-      if ( errorcount++ > 10 ) exit(2);
-      return -1;
+      flag = 1;
+    }
+  else
+    {
+      // Wir untersuchen die empfangene Payload auf Plausibilität:
+      if ( result_len != 5 )
+	{
+	  fprintf( stderr, "WRITE: Wrong RCVD Payload length!\n" );
+	  flag = 2;
+	}
+      if ( (command[2] != result[2]) || (command[3] != result[3]) )
+	{
+	  fprintf( stderr, "WRITE: Wrong Adress received!\n" );
+	  flag = 2;
+	}
+      if ( result[0] != 0x01 )
+	{
+	  fprintf( stderr, "WRITE: Wrong Message Type received!\n" );
+	  flag = 2;
+	}
+      if ( result[1] != 0x02 )
+	{
+	  fprintf( stderr, "WRITE: Wrong Access Type received!\n" );
+	  flag = 2;
+	}
+      if ( command[4] != result[4] )
+	{
+	  fprintf( stderr, "WRITE: Wrong Memory Size received!\n" );
+	  flag = 2;
+	}
     }
   
-  // Wir untersuchen die empfangene Payload auf plausibilität:
-  flag = 0;
-  if ( result_len != 5 )
-    {
-      fprintf( stderr, "WRITE: Wrong RCVD Payload length!\n" );
-      flag = 1;
-    }
-  if ( (command[2] != result[2]) || (command[3] != result[3]) )
-    {
-      fprintf( stderr, "WRITE: Wrong Adress received!\n" );
-      flag = 1;
-    }
-  if ( result[0] != 0x01 )
-    {
-      fprintf( stderr, "WRITE: Wrong Message Type received!\n" );
-      flag = 1;
-    }
-  if ( result[1] != 0x02 )
-    {
-      fprintf( stderr, "WRITE: Wrong Access Type received!\n" );
-      flag = 1;
-    }
-  if ( command[4] != result[4] )
-    {
-      fprintf( stderr, "WRITE: Wrong Memory Size received!\n" );
-      flag = 1;
-    }
-  
-  if (flag)
+  if ( flag == 2 )
     {
       fprintf( stderr, "WRITE: Received Payload " );
       print_hex( result, result_len );
-      if ( errorcount++ > 10 ) exit(2);
+    }
+  
+  if ( flag > 0 )
+    {
+      if ( errorcount++ > MAX_ERRORS )
+	exit(2);
       return -1;
     }
 
