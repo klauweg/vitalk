@@ -125,9 +125,9 @@ int read_errors( char **value_ptr )
 	  return -1;
    
       // String der Form 0,0,0,0,0,0,0,0,0,0 basteln:
-      value_str[0] = '\0';
-      for ( i = 0; i <= 9 ; i++ )
-	sprintf( value_str,"%s%u%c", value_str, content[i], i == 9 ? '\0' : ',' );
+      sprintf( value_str,"%u,%u,%u,%u,%u,%u,%u,%u,%u,%u",
+	     content[0],content[1],content[2],content[3],content[4],
+	     content[5],content[6],content[7],content[8],content[9] );
     }
   
   *value_ptr = value_str;
@@ -139,22 +139,30 @@ int read_errors_text( char **value_ptr )
 {
   static char value_str[80*10] = "";
   char *errors;
-  char *error[15];
-  int i;
+  int error[10];
   
   if ( read_errors( &errors ) < 0 )
     return -1;
-  
-  // parse string from read_error_history():
-  error[0] = strtok( errors, "," );
-  for ( i=1; i<=9; i++ )
-    error[i] = strtok( NULL, "," );
-  
+
+  // Das war ursprünglich mit strtok gelöst. Ist aber ganz böse, weil damit
+  // der static puffer in read_errors() kaputt geht.
+  sscanf( errors, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
+       &error[0],&error[1],&error[2],&error[3],&error[4],&error[5],&error[6],&error[7],&error[8],&error[9] );
+
   // String mit 10 Zeilen der Fehlerbeschreibungen basteln:
-  value_str[0]='\0';
-  for ( i=0; i<=9; i++ )
-    sprintf( value_str, "%s0x%02x %s\n", 
-		       value_str, atoi(error[i]), fehlerliste[atoi(error[i])] );
+  sprintf( value_str, "0x%02x %s\n0x%02x %s\n0x%02x %s\n0x%02x %s\n0x%02x %s\n"
+	              "0x%02x %s\n0x%02x %s\n0x%02x %s\n0x%02x %s\n0x%02x %s\n",
+	              error[0], fehlerliste[error[0]],
+	              error[1], fehlerliste[error[1]],
+	              error[2], fehlerliste[error[2]],
+	              error[3], fehlerliste[error[3]],
+	              error[4], fehlerliste[error[4]],
+	              error[5], fehlerliste[error[5]],
+	              error[6], fehlerliste[error[6]],
+	              error[7], fehlerliste[error[7]],
+	              error[8], fehlerliste[error[8]],
+	              error[9], fehlerliste[error[9]] );
+  
   *value_ptr = value_str;
   return 0;
 }
