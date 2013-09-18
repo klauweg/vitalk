@@ -7,58 +7,66 @@
 #include <string.h>
 #include <stdint.h>
 #include <time.h>
+#include <assert.h>
 
 #include "vito_parameter.h"
 #include "vito_io.h"
 #include "fehlerliste.h"
 
+#define CACHE_TIME 6
+
 // Das prologue() Makro wird verwendet, um den Anfang der
-// (meisten) Parameterfunktionen zu bauen:
-#define prologue( address, length, cache_time, bufferlen ) \
+// Parameterfunktionen zu bauen:
+#define prologue() \
    static time_t old_time = 0; \
-   static char value_str[(bufferlen)]=""; \
-   time_t new_time; \
-   uint8_t content[30]; \
-   new_time = time(NULL) / (cache_time); \
+   uint8_t vitomem[30]; \
+   time_t new_time = time(NULL) / (CACHE_TIME); \
    if ( new_time > old_time ) \
-   { \
-     old_time = new_time; \
-     if ( vito_read( (address), (length), content ) < 0 ) \
-       return -1; \
-     else \
-     { \
+   {
 
 // Das epilogue() Makro wird verwendet, um das Ende der
-// (meisten) Parameterfunktionen zu bauen:
+// Parameterfunktionen zu bauen:
 #define epilogue() \
-   } } \
-   *value_ptr = value_str; \
-   return 0;
+   old_time = new_time; \
+   } \
+   return cache;
 
+// OBACHT:
+// wenn in den vito_read() Aufrufen der Parameterfunktionen ein
+// Fehler auftritt (-1), muss gleich mit return beendet werden,
+// damit old_time=new_time nicht erreicht wird und beim nächsten
+// Aufruf ein fehlerhafter Wert aus dem Cache statt einem Fehler
+// zurückgegeben wird.
 
 ////////////////////////// PARAMETERFUNKTIONEN ////////////////////
 
 /* -------------------------------- */
-int read_deviceid( char **value_ptr )
+const char * const read_deviceid( void )
 {
-  prologue( 0x00f8, 2, 240, 10 )
-      // Normalerweise sind die Parameter in Little Endian
-      // Byteorder, aber bei der Deviceid hat sich offenbar
-      // die umgekehrte Interpretation durchgesetzt:
-    sprintf( value_str, "0x%4x", (content[0] << 8) + content[1] );
+  static char cache[10];
+  prologue()
+    if ( vito_read( 0x00f8, 2, vitomem ) < 0 )
+      return "NULL";
+  // Normalerweise sind die Parameter in Little Endian
+  // Byteorder, aber bei der Deviceid hat sich offenbar
+  // die umgekehrte Interpretation durchgesetzt:
+  sprintf( cache, "0x%4x", (vitomem[0] << 8) + vitomem[1] );
   epilogue()
 }
 
 /* -------------------------------- */
-int read_mode( char **value_ptr )
+const char * const read_mode( void )
 {
-  prologue( 0x2323, 1, 6, 5 )
-    sprintf( value_str, "%u", content[0] );
+  static char cache[5];
+  prologue()
+    if ( vito_read( 0x2323, 1, vitomem ) < 0 )
+      return "NULL";
+  sprintf( cache, "%u", vitomem[0] );
   epilogue()
 }
 
 /* -------------------------------- */
-int write_mode( char *value_str )
+int write_mode( const char * const value_str )
 {
   uint8_t content[10];
   int mode;
@@ -76,28 +84,20 @@ int write_mode( char *value_str )
 }
 
 /* -------------------------------- */
-int read_mode_text( char **value_ptr )
+const char * const read_mode_text( void )
 {
-  char *value_str;
-  char *mode;
+  const char * const mode = read_mode();
   
-  if ( read_mode( &mode ) < 0 )
-    return -1;
-  
+  if ( strcmp(mode,"NULL") == 0)
+    return "NULL";
+
   switch ( atoi(mode) )
 	{
-	case 0: value_str = "Abschaltbetrieb";
-	  break;
-	case 1: value_str = "Nur Warmwasser";
-	  break;
-	case 2: value_str = "Heizen und Warmwasser";
-	  break;
-	default: value_str = "UNKNOWN";
-	  break;
+	case 0: return "Abschaltbetrieb";
+	case 1: return "Nur Warmwasser";
+	case 2: return "Heizen und Warmwasser";
+	default: return "UNKNOWN";
 	}
-  
-  *value_ptr = value_str;
-  return 0;
 }
 
 /* -------------------------------- */
@@ -105,108 +105,109 @@ int read_mode_text( char **value_ptr )
 // vito.xml file von ceteris paribus werden 9 byte pro Eintrag
 // gelesen. Ich sehe den Sinn aber nicht? Ich muss mal noch beobachten was passiert
 // wenn mehr als ein Eintrag in der Fehlerliste steht!
-int read_errors( char **value_ptr )
+const char * const read_errors( void )
 {
-  static time_t old_time = 0;
-  static char value_str[80] = "";
-  time_t new_time;
-  uint8_t content[15];
+  static char cache[80];
+  prologue()
   int address, i;
   
-  new_time = time(NULL) / 60;
-  if ( new_time > old_time )
-    {
-      old_time = new_time;
-      
-      // Die 10 Fehlermeldungen numerisch ins content Array lesen:
-      i = 0;
-      for ( address = 0x7507; address <= 0x7558; address += 9 )
-	if ( vito_read( address, 1, &content[i++] ) < 0 )
-	  return -1;
+  // Die 10 Fehlermeldungen einlesen:
+  i = 0;
+  for ( address = 0x7507; address <= 0x7558; address += 9 )
+    if ( vito_read( address, 1, &vitomem[i++] ) < 0 )
+      return "NULL";
    
-      // String der Form 0,0,0,0,0,0,0,0,0,0 basteln:
-      sprintf( value_str,"%u,%u,%u,%u,%u,%u,%u,%u,%u,%u",
-	     content[0],content[1],content[2],content[3],content[4],
-	     content[5],content[6],content[7],content[8],content[9] );
-    }
-  
-  *value_ptr = value_str;
-  return 0;
+  // String der Form 0,0,0,0,0,0,0,0,0,0 basteln:
+  sprintf( cache,"%u,%u,%u,%u,%u,%u,%u,%u,%u,%u",
+   cache[0],cache[1],cache[2],cache[3],cache[4],cache[5],cache[6],cache[7],cache[8],cache[9] );
+
+  epilogue()
 }
 
 /* -------------------------------- */
-int read_errors_text( char **value_ptr )
+// Die 10 Fehlerspeicherplätze als Textstrings zurückgeben:
+const char * const read_errors_text( void )
 {
-  static char value_str[80*10] = "";
-  char *errors;
-  int error[10];
+  static char cache[80*10];
+  char zeile[80];
+  const char * errors;
+  int n_error;
+  int i;
   
-  if ( read_errors( &errors ) < 0 )
-    return -1;
+  errors = read_errors();
+  if ( strcmp( errors, "NULL" ) == 0 )
+    return "NULL";
 
-  // Das war ursprünglich mit strtok gelöst. Ist aber ganz böse, weil damit
-  // der static puffer in read_errors() kaputt geht.
-  sscanf( errors, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
-       &error[0],&error[1],&error[2],&error[3],&error[4],&error[5],&error[6],&error[7],&error[8],&error[9] );
-
-  // String mit 10 Zeilen der Fehlerbeschreibungen basteln:
-  sprintf( value_str, "0x%02x %s\n0x%02x %s\n0x%02x %s\n0x%02x %s\n0x%02x %s\n"
-	              "0x%02x %s\n0x%02x %s\n0x%02x %s\n0x%02x %s\n0x%02x %s\n",
-	              error[0], fehlerliste[error[0]],
-	              error[1], fehlerliste[error[1]],
-	              error[2], fehlerliste[error[2]],
-	              error[3], fehlerliste[error[3]],
-	              error[4], fehlerliste[error[4]],
-	              error[5], fehlerliste[error[5]],
-	              error[6], fehlerliste[error[6]],
-	              error[7], fehlerliste[error[7]],
-	              error[8], fehlerliste[error[8]],
-	              error[9], fehlerliste[error[9]] );
-  
-  *value_ptr = value_str;
-  return 0;
+  cache[0]='\0';
+  for ( i = 0; i <= 9; i++ ) // 10 Fehler
+    {
+      n_error = atoi(errors); // In integer Array speichern
+      assert ( n_error >= 0 && n_error <= 255 );
+      sprintf( zeile, "0x%02x %s\n", n_error, fehlerliste[n_error] );
+      strcat( cache, zeile );
+      
+      if ( i == 9 )
+	return cache;
+      
+      while ( *(errors++) != ',' ) // Das nächste Komma suchen
+	assert( *errors ); // Stringende darf noch nicht erreicht sein!
+      assert( *errors );
+    }
 }
 
 
 //////////////////// KESSEL
 /* -------------------------------- */
-int read_abgas_temp( char **value_ptr )
+const char * const read_abgas_temp( void )
 {
-  prologue( 0x0808, 2, 6, 6 )
-    sprintf( value_str, "%3.2f", ( content[0] + (content[1] << 8)) / 10.0 );
+  static char cache[6];
+  prologue()
+    if ( vito_read( 0x0808, 2, vitomem) < 0 )
+      return "NULL";
+  sprintf( cache, "%3.2f", ( vitomem[0] + (vitomem[1] << 8)) / 10.0 );
   epilogue()
 }
 
 /* -------------------------------- */
-int read_k_ist_temp( char **value_ptr )
+const char * const read_k_ist_temp( void )
 {
-  prologue( 0x0802, 2, 6, 6 )
-    sprintf( value_str, "%3.2f", ( content[0] + (content[1] << 8)) / 10.0 );
+  static char cache[6];
+  prologue()
+    if ( vito_read( 0x0802, 2, vitomem) < 0 )
+      return "NULL";
+  sprintf( cache, "%3.2f", ( vitomem[0] + (vitomem[1] << 8)) / 10.0 );
   epilogue()
 }
 
-/* -------------------------------- */
-int read_k_ist_temp_tp( char **value_ptr )
+const char * const read_k_ist_temp_tp( void )
 {
-  prologue( 0x0810, 2, 6, 6 )
-    sprintf( value_str, "%3.2f", ( content[0] + (content[1] << 8)) / 10.0 );
+  static char cache[6];
+  prologue()
+    if ( vito_read( 0x0810, 2, vitomem) < 0 )
+      return "NULL";
+  sprintf( cache, "%3.2f", ( vitomem[0] + (vitomem[1] << 8)) / 10.0 );
   epilogue()
 }
 
-/* -------------------------------- */
-int read_k_soll_temp( char **value_ptr )
+const char * const read_k_soll_temp( void )
 {
-  prologue( 0x555a, 2, 6, 6 )
-    sprintf( value_str, "%3.2f", ( content[0] + (content[1] << 8)) / 10.0 );
+  static char cache[6];
+  prologue()
+    if ( vito_read( 0x555a, 2, vitomem) < 0 )
+      return "NULL";
+  sprintf( cache, "%3.2f", ( vitomem[0] + (vitomem[1] << 8)) / 10.0 );
   epilogue()
 }
 
 //////////////////// WARMWASSER
 /* -------------------------------- */
-int read_ww_soll_temp( char **value_ptr)
+const char * const read_ww_soll_temp( void)
 {
-  prologue( 0x6300, 1, 6, 6 )
-    sprintf( value_str, "%u", content[0] );
+  static char cache[6];
+  prologue()
+    if ( vito_read( 0x6300, 1, vitomem) < 0 )
+      return "NULL";
+  sprintf( cache, "%u", vitomem[0] );
   epilogue()
 }
 
@@ -228,171 +229,210 @@ int write_ww_soll_temp( char *value_str )
 }
 
 /* -------------------------------- */
-int read_ww_offset( char **value_ptr )
+const char * const read_ww_offset( void)
 {
-  prologue( 0x6760, 1, 60, 5 )
-    sprintf( value_str, "%u", content[0] );
+  static char cache[6];
+  prologue()
+    if ( vito_read( 0x6760, 1, vitomem) < 0 )
+      return "NULL";
+  sprintf( cache, "%u", vitomem[0] );
   epilogue()
 }
 
 /* -------------------------------- */
-int read_ww_ist_temp_tp( char **value_ptr )
+const char * const read_ww_ist_temp_tp( void )
 {
-  prologue( 0x0812, 2, 6, 6 )
-    sprintf( value_str, "%3.2f", ( content[0] + (content[1] << 8)) / 10.0 );
+  static char cache[6];
+  prologue()
+    if ( vito_read( 0x0812, 2, vitomem) < 0 )
+      return "NULL";
+  sprintf( cache, "%3.2f", ( vitomem[0] + (vitomem[1] << 8)) / 10.0 );
   epilogue()
 }
 
 /* -------------------------------- */
-int read_ww_ist_temp( char **value_ptr )
+const char * const read_ww_ist_temp( void )
 {
-  prologue( 0x0804, 2, 6, 6 )
-    sprintf( value_str, "%3.2f", ( content[0] + (content[1] << 8)) / 10.0 );
+  static char cache[6];
+  prologue()
+    if ( vito_read( 0x0804, 2, vitomem) < 0 )
+      return "NULL";
+  sprintf( cache, "%3.2f", ( vitomem[0] + (vitomem[1] << 8)) / 10.0 );
   epilogue()
 }
 
 
 /////////////////// AUSSENTEMPERATUR
 /* -------------------------------- */
-int read_outdoor_temp_tp( char **value_ptr )
+const char * const read_outdoor_temp_tp( void )
 {
-  prologue( 0x5525, 2, 6, 6 )
-    sprintf( value_str, "%3.2f", ( content[0] + (content[1] << 8)) / 10.0 );
+  static char cache[6];
+  prologue()
+    if ( vito_read( 0x5525, 2, vitomem) < 0 )
+      return "NULL";
+  sprintf( cache, "%3.2f", ( vitomem[0] + (vitomem[1] << 8)) / 10.0 );
   epilogue()
 }
 
 /* -------------------------------- */
-int read_outdoor_temp_smooth( char **value_ptr )
+const char * const read_outdoor_temp_smooth( void )
 {
-  prologue( 0x5527, 2, 6, 6 )
-    sprintf( value_str, "%3.2f", ( content[0] + (content[1] << 8)) / 10.0 );
+  static char cache[6];
+  prologue()
+    if ( vito_read( 0x5527, 2, vitomem) < 0 )
+      return "NULL";
+  sprintf( cache, "%3.2f", ( vitomem[0] + (vitomem[1] << 8)) / 10.0 );
   epilogue()
 }
 
 /* -------------------------------- */
-int read_outdoor_temp( char **value_ptr )
+const char * const read_outdoor_temp( void )
 {
-  prologue( 0x0800, 2, 6, 6 )
-    sprintf( value_str, "%3.2f", ( content[0] + (content[1] << 8)) / 10.0 );
+  static char cache[6];
+  prologue()
+    if ( vito_read( 0x0800, 2, vitomem) < 0 )
+      return "NULL";
+  sprintf( cache, "%3.2f", ( vitomem[0] + (vitomem[1] << 8)) / 10.0 );
   epilogue()
 }
 
 /////////////////// BRENNER
 /* -------------------------------- */
-int read_starts( char **value_ptr )
+const char * const read_starts(void )
 {
-  prologue( 0x088A, 4, 6, 20 )
-    {
-      unsigned int value;
+  static char cache[20];
+  prologue()
+    if ( vito_read( 0x088A, 4, vitomem) < 0 )
+      return "NULL";
   
-      value = content[0] + (content[1] << 8) + (content[2] << 16) + (content[3] << 24);
-      sprintf( value_str, "%u", value );
-    }
+  unsigned int value;
+  
+  value = vitomem[0] + (vitomem[1] << 8) + (vitomem[2] << 16) + (vitomem[3] << 24);
+      sprintf( cache, "%u", value );
+
   epilogue()
 }
 
 /* -------------------------------- */
-int read_runtime( char **value_ptr )
+const char * const read_runtime( void )
 {
-  prologue( 0x0886, 4, 6, 20 )
-    {
-      unsigned int value;
+  static char cache[20];
+  prologue()
+    if ( vito_read( 0x0886, 4, vitomem) < 0 )
+      return "NULL";
   
-      value = content[0] + (content[1] << 8) + (content[2] << 16) + (content[3] << 24);
-      sprintf( value_str, "%u", value );
-    }
+  unsigned int value;
+  
+  value = vitomem[0] + (vitomem[1] << 8) + (vitomem[2] << 16) + (vitomem[3] << 24);
+      sprintf( cache, "%u", value );
+
   epilogue()
 }
 
 /* -------------------------------- */
-int read_runtime_h( char **value_ptr )
+const char * const read_runtime_h( void )
 {
-  static char value_str[20] = "";
-  char *result;
+  static char cache[20];
+  const char *result;
 
-  if ( read_runtime( &result ) < 0 )
-    return -1;
+  result = read_runtime();
+  
+  if ( strcmp( result, "NULL" ) == 0 )
+    return "NULL";
 
-  sprintf( value_str, "%06.1f", atoi(result) / 3600.0 );
-
-  *value_ptr = value_str;
-  return 0;
+  sprintf( cache, "%06.1f", atoi(result) / 3600.0 );
+  return cache;
 }
 
 /* -------------------------------- */
-int read_power( char **value_ptr )
+const char * const read_power( void )
 {
-  prologue( 0xa38f, 1, 6, 6 )
-    sprintf( value_str, "%3.1f", content[0] / 2.0 );
+  static char cache[6];
+  prologue()
+    if ( vito_read( 0xa38f, 1, vitomem) < 0 )
+      return "NULL";
+  
+  sprintf( cache, "%3.1f", vitomem[0] / 2.0 );
   epilogue()
 }
 
 /////////////////// HYDRAULIK
 /* -------------------------------- */
-int read_ventil( char **value_ptr )
+const char * const read_ventil( void )
 {
-  prologue( 0x0a10, 1, 6, 5 )
-    sprintf( value_str, "%u", content[0] );
+  static char cache[5];
+  prologue()
+    if ( vito_read( 0x0a10, 1, vitomem) < 0 )
+      return "NULL";
+  
+  sprintf( cache, "%u", vitomem[0] );
   epilogue()
 }
 
 /* -------------------------------- */
-int read_ventil_text( char **value_ptr )
+const char * const read_ventil_text( void )
 {
-  char *value_str;
-  char *buffer;
+  const char *result;
   
-  if ( read_ventil( &buffer ) < 0 )
-    return -1;
+  result = read_ventil();
   
-  switch (atoi(buffer))
+  if ( strcmp( result, "NULL" ) == 0 )
+    return "NULL";
+  
+  switch (atoi(result))
     {
-    case 0: value_str = "undefiniert";
-      break;
-    case 1: value_str = "Heizkreis";
-      break;
-    case 2: value_str = "Mittelstellung";
-      break;
-    case 3: value_str = "Warmwasserbereitung";
-      break;
-    default: value_str = "UNKNOWN: %s";
-      break;
+    case 0: return "undefiniert";
+    case 1: return "Heizkreis";
+    case 2: return "Mittelstellung";
+    case 3: return "Warmwasserbereitung";
+    default: return "UNKNOWN";
     }
-  
-  *value_ptr = value_str;
-  return 0;
 }
 
 /* -------------------------------- */
-int read_pump_power( char **value_ptr )
+const char * const read_pump_power( void )
 {
-  prologue( 0x0a3c, 1, 6, 5 )
-    sprintf( value_str, "%u", content[0] );
+  static char cache[5];
+  prologue()
+    if ( vito_read( 0x0a3c, 1, vitomem) < 0 )
+      return "NULL";
+
+  sprintf( cache, "%u", vitomem[0] );
   epilogue()
 }
 
 /* -------------------------------- */
-int read_flow( char **value_ptr )
+const char * const read_flow( void )
 {
-  prologue( 0x0c24, 2, 6, 20 )
-    sprintf( value_str, "%u", (content[0] + (content[1] << 8)) );
+  static char cache[10];
+  prologue()
+     if ( vito_read( 0x0c24, 2, vitomem) < 0 )
+      return "NULL";
+  
+  sprintf( cache, "%u", (vitomem[0] + (vitomem[1] << 8)) );
   epilogue()
 }
     
 /////////////////// HEIZKREIS
 /* -------------------------------- */
-int read_vl_soll_temp( char **value_ptr )
+const char * const read_vl_soll_temp( void )
 {
-  prologue( 0x2544, 2, 6, 6 )
-    sprintf( value_str, "%3.2f", ( content[0] + (content[1] << 8)) / 10.0 );
+  static char cache[6];
+  prologue()
+    if ( vito_read( 0x2544, 2, vitomem) < 0 )
+      return "NULL";
+  sprintf( cache, "%3.2f", ( vitomem[0] + (vitomem[1] << 8)) / 10.0 );
   epilogue()
 }
 
 /* -------------------------------- */
-int read_raum_soll_temp( char **value_ptr )
+const char * const read_raum_soll_temp( void )
 {
-  prologue( 0x2306, 1, 6, 5 )
-    sprintf( value_str, "%u", content[0] );
+  static char cache[6];
+  prologue()
+    if ( vito_read( 0x2306, 1, vitomem) < 0 )
+      return "NULL";
+  sprintf( cache, "%u", vitomem[0] );
   epilogue()
 }
 
@@ -415,10 +455,13 @@ int write_raum_soll_temp( char *value_str )
 }
 
 /* -------------------------------- */
-int read_red_raum_soll_temp( char **value_ptr )
+const char * const read_red_raum_soll_temp( void )
 {
-  prologue( 0x2307, 1, 6, 5 )
-    sprintf( value_str, "%u", content[0] );
+  static char cache[6];
+  prologue()
+    if ( vito_read( 0x2307, 1, vitomem) < 0 )
+      return "NULL";
+  sprintf( cache, "%u", vitomem[0] );
   epilogue()
 }
 
@@ -441,21 +484,26 @@ int write_red_raum_soll_temp( char *value_str )
 }
 
 /* -------------------------------- */
-int read_neigung( char **value_ptr )
+const char * const read_neigung( void )
 {
-  prologue( 0x27d3, 1, 6, 6 )
-    sprintf( value_str, "%2.1f", content[0] / 10.0 );
+  static char cache[6];
+  prologue()
+    if ( vito_read( 0x27d3, 1, vitomem) < 0 )
+      return "NULL";
+  sprintf( cache, "%2.1f", vitomem[0] / 10.0 );
   epilogue()
 }
 
 /* -------------------------------- */
-int read_niveau( char **value_ptr )
+const char * const read_niveau( void )
 {
-  prologue( 0x27d4, 1, 6, 5 )
-    sprintf( value_str, "%u", content[0] );
+  static char cache[5];
+  prologue()
+    if ( vito_read( 0x27d4, 1, vitomem) < 0 )
+      return "NULL";
+  sprintf( cache, "%u", vitomem[0] );
   epilogue()
 }
-
 
 //////////////////////////////////////////////////////////////////////////
 // obacht: maximale Befehlslänge 20 Zeichen, sonst klemmt der telnet-parser

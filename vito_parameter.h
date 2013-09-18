@@ -4,7 +4,7 @@ struct s_parameter {
   char *p_description;  // Beschreibung des Parameters
   char *p_einheit;      // Einheit (String)
   int p_class;         // Parameterklasse, siehe #define
-  int (*f_read) (char **value_ptr); // Funktion zum lesen aus der Vitodens
+  const char * const (*f_read) (void); // Funktion zum lesen aus der Vitodens
   int (*f_write) (char *value_str); // Funktion zum Schreiben in die Vitodens
 };
 
