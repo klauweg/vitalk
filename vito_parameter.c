@@ -507,40 +507,33 @@ char * get_v( char *name )
 	  if ( parameter_liste[i].f_read ) // Gibts eine Zugriffsfunktion?
 	    {
 	      if ( parameter_liste[i].f_read( &value_ptr ) < 0 ) // Zugriffsfunktion aufrufen
-		{
-		  value_ptr="READ-ERROR"; // error calling the read function
-		}
+		return "READ-ERROR";
+	      else
+		return value_ptr;
 	    }
 	  else
-	    value_ptr="UIF-ERROR"; // Unimplemented Function Error
-	  
-	  return value_ptr; // Stringpointer zurückgeben
+	    return "Function not implemented.";
 	}
       i++;
     }
-  
-  value_ptr="PNF-ERROR"; // Parameter not Found Error
-  return value_ptr;
+
+  return "Parameter not found.";
 }
 
 // Einheit für Parameter nachschlagen
 char * get_u( char *name )
 {
   int i=0;
-  static char value_str[30]="";
   
   while( parameter_liste[i].p_name[0] ) // Ende der Liste
     {
       if ( strcmp( name, parameter_liste[i].p_name ) == 0 ) // Parametername gefunden?
-	{
-	  strcpy( value_str, parameter_liste[i].p_einheit ); // Einheit kopieren
-	  return value_str; // Einheit zurückgeben
-	}
+	return parameter_liste[i].p_einheit;
+
       i++;
     }
-  
-  strcpy(value_str,"PNF-ERROR"); // Parameter not Found Error
-  return value_str;
+
+  return "Parameter not found.";
 }
 
 // Parameterwert setzen
