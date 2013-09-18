@@ -22,7 +22,7 @@ extern const struct s_parameter parameter_liste[];
 #define P_HYDRAULIK  7
 
 // Prototypen:
-char * get_v( char *name );
-char * get_u( char *name );
+const char * const get_v( const char *name );
+const char * const get_u( const char *name );
 char * set_v( char *name, char *value );
 

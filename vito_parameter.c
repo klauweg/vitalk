@@ -66,7 +66,7 @@ const char * const read_mode( void )
 }
 
 /* -------------------------------- */
-int write_mode( const char * const value_str )
+int write_mode( char * value_str )
 {
   uint8_t content[10];
   int mode;
@@ -153,6 +153,8 @@ const char * const read_errors_text( void )
 	assert( *errors ); // Stringende darf noch nicht erreicht sein!
       assert( *errors );
     }
+  
+  return "NULL"; // Sollte niemals erreicht werden!
 }
 
 
@@ -543,22 +545,16 @@ const struct s_parameter parameter_liste[] = {
 /////////////////////////////////////////////////////////////////////////////////
 
 // Parameter Wert nachschlagen nach Name
-char * get_v( char *name )
+const char * const get_v( const char *name )
 {
   int i=0;
-  char *value_ptr = NULL;
   
   while( parameter_liste[i].p_name[0] ) // Ende der Liste ?
     {
       if ( strcmp( name, parameter_liste[i].p_name ) == 0 ) // Parametername gefunden?
 	{
 	  if ( parameter_liste[i].f_read ) // Gibts eine Zugriffsfunktion?
-	    {
-	      if ( parameter_liste[i].f_read( &value_ptr ) < 0 ) // Zugriffsfunktion aufrufen
-		return "READ-ERROR";
-	      else
-		return value_ptr;
-	    }
+	    return parameter_liste[i].f_read();
 	  else
 	    return "Function not implemented.";
 	}
@@ -569,7 +565,7 @@ char * get_v( char *name )
 }
 
 // Einheit für Parameter nachschlagen
-char * get_u( char *name )
+const char * const get_u( const char *name )
 {
   int i=0;
   
