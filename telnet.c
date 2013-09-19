@@ -88,7 +88,7 @@ void telnet_init( void )
   /* create socket */
   if((fd_listener = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0)) == -1)
     {
-      fprintf( stderr, "Error creating Telnet Socket!\n");
+      fprintf( stderr, "Error creating Telnet Socket: %s\n", strerror(errno));
       exit(1);
     }
 
@@ -97,7 +97,7 @@ void telnet_init( void )
   const int optVal = 1;
   if ( setsockopt(fd_listener, SOL_SOCKET, SO_REUSEADDR, (void*) &optVal, sizeof(int)) == -1 )
     {
-      fprintf( stderr, "Error setting Telnet Socket Options!\n");
+      fprintf( stderr, "Error setting Telnet Socket Options: %s\n", strerror(errno));
       exit(1);
     }
   
@@ -115,7 +115,7 @@ void telnet_init( void )
   /* listen */
   if(listen(fd_listener, 10) == -1) // "10" = listen backlog
     {
-      fprintf( stderr, "Error listen on Telnet Socket!\n");
+      fprintf( stderr, "Error listen on Telnet Socket: %s\n", strerror(errno));
       exit(1);
     }
   else
@@ -157,18 +157,18 @@ void telnet_task( void )
 		    }
 		  else
 		    {
-		      fprintf(stderr, "New connection from %s on socket %d\n",
+		      printf("New connection from %s on socket %d\n",
 			      inet_ntoa(clientaddr.sin_addr), fd_new);
 		      FD_SET(fd_new, &master_fds); /* add to master set */
 		      buffers[i][0]='\0';
 		      buf_ptr[i] = 0;
-		      dprintf( fd_new, "Welcome at vitalk, the Vitodens telnet Interface. (nr. %u)\n", fd_new);
+		      dprintf( fd_new, "Welcome at vitalk, the Vitodens telnet Interface. (%u)\n", fd_new);
 		    }
 		}
 	    }
 	  else
 	    { // Daten von einem Client:
-	      result = recv(i, &buffers[i][buf_ptr[i]], 1, 0);
+	      result = recv(i, &buffers[i][buf_ptr[i]], 1, MSG_DONTWAIT); // Nicht effektiv, aber einfacher
 	      if ( result <= 0 )
 		{
 		  if ( result < 0 )
@@ -185,16 +185,15 @@ void telnet_task( void )
 		  if ( ( strchr(buffers[i], '\n') ) || // Newline im Puffer?
 		       ( buf_ptr[i] > TELNET_BUFFER_SIZE - 4 ) ) // Oder Puffer "ziemlich" voll?
 		    { // Dann werten wir das aus:
-		      buf_ptr[i] = 0; // Für die nächste Pufferfüllung
-		      
 		      char command[24] = "";
 		      char value1[24] = "";
 		      char value2[24] = "";
-		      
+
 		      sscanf( buffers[i], "%20s %20s %20s %*s\n", command, value1, value2 );
 		      
 		      // Empty socket input buffer:
 		      while ( recv(i, buffers[i], TELNET_BUFFER_SIZE, MSG_DONTWAIT ) > 0);
+		      buf_ptr[i] = 0; // Für die nächste Pufferfüllung
 			      
 		      // Suche nach bekanntem Befehl:
 		      for ( cnum=0; commands[cnum][0]; cnum++ ) 

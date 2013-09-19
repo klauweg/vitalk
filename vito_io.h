@@ -1,6 +1,7 @@
 #include <stdint.h>
 
 extern int frame_debug;
+extern time_t vito_keepalive;
 
 // Öffnet die serielle Schnittstelle zum Kessel:
 void opentty(char *device);

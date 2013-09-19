@@ -5,6 +5,7 @@
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 #include <stdint.h>
 #include "vito_io.h"
@@ -17,6 +18,7 @@
 static int fd_tty = 0; // Filedescriptor serielle Schnittstelle
 static int errorcount = 0; // Abbruch bei zu häufigen Fehlern
 int frame_debug = 0; // Ausgabe der Framedaten als hex auf stderr wenn =1
+time_t vito_keepalive = 0; // Zeit des letzten Zugriff in vito_meeting()
 
 // Öffnen der seriellen Schnittstelle:
 // Keine Rückgabewerte. Wenns nicht geht wird sowieso beendet:
@@ -263,6 +265,9 @@ static int vito_meeting( uint8_t *tx_data, int tx_data_len, uint8_t *rx_data )
       print_hex( buffer, rx_data_len + 3 );
       return -1;
     }
+
+  // Letzten Zugriff speichern:
+  vito_keepalive = time(NULL);
   
   memcpy( rx_data, &buffer[2], rx_data_len );
   return rx_data_len;

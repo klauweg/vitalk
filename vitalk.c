@@ -6,9 +6,11 @@
 #include <fcntl.h>
 #include <string.h>
 #include <signal.h>
+#include <time.h>
 #include <unistd.h>
 #include "vito_io.h"
 #include "telnet.h"
+#include "vito_parameter.h"
 
 // This define enables communication with Vitodens:
 #define VITOCOM
@@ -36,6 +38,8 @@ int main(int argc, char **argv)
   int c; 
   // Diverse Options:
   char *tty_devicename = NULL;
+  // Struktur für select() timeout
+  struct timeval *timeout = (struct timeval *) malloc( sizeof(struct timeval) );
   
   // Option processing with GNU getopt
   while ((c = getopt (argc, argv, "hft:")) != -1)
@@ -63,7 +67,7 @@ int main(int argc, char **argv)
   // Do some checks:
   if ( !tty_devicename )
     {
-      printf("ERROR: Need tty Devicename!\n");
+      fprintf(stderr, "ERROR: Need tty Devicename!\n");
       exit(5);
     }
 
@@ -85,11 +89,21 @@ int main(int argc, char **argv)
   // Main Event-Loop. (Kann nur durch die Signalhandler beendet werden.)
   for (;;)
     {
+      timeout->tv_sec = 60;
+      timeout->tv_usec = 0;
+      
       read_fds = master_fds;
       
-      if ( select ( MAX_DESCRIPTOR+1, &read_fds, NULL, NULL, NULL ) > 0 )  // SELECT
+      if ( select ( MAX_DESCRIPTOR+1, &read_fds, NULL, NULL, timeout ) > 0 )  // SELECT
 	  telnet_task();
-    }
 
+      // Nach einer gewissen Zeit der Inaktivität wird das 300er Protokoll
+      // anscheinend wieder deaktiviert. (ca. nach 10 minuten)
+      // Daher haben wir hier eine Keepalive-Funktion:
+      if ( time(NULL) - vito_keepalive > 500 )
+	{
+	  fprintf( stderr, "Keepalive: %s\n", get_v("deviceid") );
+	}
+    }
 }
 
