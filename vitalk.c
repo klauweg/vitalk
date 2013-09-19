@@ -102,7 +102,7 @@ int main(int argc, char **argv)
       // Daher haben wir hier eine Keepalive-Funktion:
       if ( time(NULL) - vito_keepalive > 500 )
 	{
-	  fprintf( stderr, "Keepalive: %s\n", get_v("deviceid") );
+	  fprintf( stdout, "Keepalive: %s\n", get_v("deviceid") );
 	}
     }
 }

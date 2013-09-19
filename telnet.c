@@ -7,6 +7,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include "vito_parameter.h"
+#include "vito_io.h"
 #include "telnet.h"
 
 extern fd_set master_fds; /* file descriptor list for select() */
@@ -27,6 +28,7 @@ const char *commands[] =
    "list",              // 6
    "gc",                // 7
    "gvu",               // 8
+   "frame_debug",       // 9
    "\0"
 };
 
@@ -41,6 +43,7 @@ static void print_help( int fd )
 	  "  s, set <p_name> <value> - Set Parameter\n"
 	  "  gc <class>              - Query a class of Parameters\n"
 	  "  gvu <p_name>            - Get Value of Parameter with Unit\n"
+	  "  frame_debug <on/off>    - Set state of Frame Debugging\n"
 	  "\n"
     );
 }
@@ -157,7 +160,7 @@ void telnet_task( void )
 		    }
 		  else
 		    {
-		      printf("New connection from %s on socket %d\n",
+		      fprintf(stdout, "New connection from %s on socket %d\n",
 			      inet_ntoa(clientaddr.sin_addr), fd_new);
 		      FD_SET(fd_new, &master_fds); /* add to master set */
 		      buffers[i][0]='\0';
@@ -174,7 +177,7 @@ void telnet_task( void )
 		  if ( result < 0 )
 		    fprintf( stderr, "recv() error: %s\n", strerror(errno));
 		  // Verbindung wurde beendet:
-		  printf("Socket %d hung up.\n", i);
+		  fprintf(stdout, "Socket %d hung up.\n", i);
 		  close(i);
 		  FD_CLR(i, &master_fds);
 		}
@@ -221,6 +224,12 @@ void telnet_task( void )
 				break;
 			      case 8:
 				dprintf( i, "%s %s\n", get_v(value1), get_u(value1) );
+				break;
+			      case 9:
+				if ( strcmp( value1, "on" ) == 0 )
+				  frame_debug = 1;
+				else
+				  frame_debug = 0;
 				break;
 			      }
 			}
