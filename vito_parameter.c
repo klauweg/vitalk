@@ -75,6 +75,8 @@ int write_mode( char * value_str )
   // Dauernd reduziert und dauernd normal unterstützt meine Vitodens offenbar nicht:
   if ( mode < 0 || mode > 2 )
     {
+#fffffffffffffffffffffffffffffffffffffffffffffffff
+// Fehlermeldungen hier gleich als String zurückgeben!
       fprintf( stderr, "Illegal Mode!\n");
       return -1;
     }
@@ -107,19 +109,20 @@ const char * const read_mode_text( void )
 // wenn mehr als ein Eintrag in der Fehlerliste steht!
 const char * const read_errors( void )
 {
-  static char cache[80];
+  static char cache[50];
   prologue()
-  int address, i;
+    
+  int i;
   
   // Die 10 Fehlermeldungen einlesen:
-  i = 0;
-  for ( address = 0x7507; address <= 0x7558; address += 9 )
-    if ( vito_read( address, 1, &vitomem[i++] ) < 0 )
-      return "NULL";
-   
-  // String der Form 0,0,0,0,0,0,0,0,0,0 basteln:
-  sprintf( cache,"%u,%u,%u,%u,%u,%u,%u,%u,%u,%u",
-   cache[0],cache[1],cache[2],cache[3],cache[4],cache[5],cache[6],cache[7],cache[8],cache[9] );
+  for ( i=0; i <= 9; i++)
+    {
+      if ( vito_read( 0x7507 + (i*0x0009), 1, vitomem ) < 0 )
+	return "NULL";
+      
+      sprintf( cache + (4*i), "%03u,", vitomem[0] );
+    }
+  cache[49]='\0'; //letztes Komma überschreiben
 
   epilogue()
 }
@@ -138,23 +141,15 @@ const char * const read_errors_text( void )
   if ( strcmp( errors, "NULL" ) == 0 )
     return "NULL";
 
-  cache[0]='\0';
   for ( i = 0; i <= 9; i++ ) // 10 Fehler
     {
-      n_error = atoi(errors); // In integer Array speichern
+      n_error = atoi(errors + (i*4));
       assert ( n_error >= 0 && n_error <= 255 );
       sprintf( zeile, "0x%02x %s\n", n_error, fehlerliste[n_error] );
       strcat( cache, zeile );
-      
-      if ( i == 9 )
-	return cache;
-      
-      while ( *(errors++) != ',' ) // Das nächste Komma suchen
-	assert( *errors ); // Stringende darf noch nicht erreicht sein!
-      assert( *errors );
     }
-  
-  return "NULL"; // Sollte niemals erreicht werden!
+
+  return cache;
 }
 
 
