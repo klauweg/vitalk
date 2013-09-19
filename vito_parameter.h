@@ -1,11 +1,11 @@
 // Struktur zur Verwaltung der Parameter
 struct s_parameter {
-  char *p_name;         // Parameter Kurzname
-  char *p_description;  // Beschreibung des Parameters
-  char *p_einheit;      // Einheit (String)
-  int p_class;         // Parameterklasse, siehe #define
-  const char * const (*f_read) (void); // Funktion zum lesen aus der Vitodens
-  int (*f_write) (char *value_str); // Funktion zum Schreiben in die Vitodens
+  const char * const p_name;         // Parameter Kurzname
+  const char * const p_description;  // Beschreibung des Parameters
+  const char * const p_einheit;      // Einheit (String)
+  const int p_class;         // Parameterklasse, siehe #define
+  const char * const (* const f_read) (void); // Funktion zum lesen aus der Vitodens
+  const char * const (* const f_write) (const char *value_str); // Funktion zum Schreiben in die Vitodens
 };
 
 // Parameter liste exportieren:
@@ -24,5 +24,5 @@ extern const struct s_parameter parameter_liste[];
 // Prototypen:
 const char * const get_v( const char *name );
 const char * const get_u( const char *name );
-char * set_v( char *name, char *value );
+const char * const set_v( const char *name, const char *value );
 

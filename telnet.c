@@ -50,7 +50,8 @@ static void get_class( int fd, int p_class )
   int i=0;
   while( parameter_liste[i].p_name[0] )
     {
-      if ( p_class == 0 || p_class == parameter_liste[i].p_class )
+      if ( ( p_class == 0 && parameter_liste[i].p_class > 1 ) || // ganze liste ohne Errors
+	   p_class == parameter_liste[i].p_class )               // spezifizierte Klasse
 	dprintf(fd, "%02u: %20s: %s %s\n",
 		parameter_liste[i].p_class,
 		parameter_liste[i].p_name,

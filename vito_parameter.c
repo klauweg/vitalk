@@ -66,23 +66,21 @@ const char * const read_mode( void )
 }
 
 /* -------------------------------- */
-int write_mode( char * value_str )
+const char * const write_mode( const char * value_str )
 {
-  uint8_t content[10];
+  uint8_t content[3];
   int mode;
   
   mode = atoi( value_str );
   // Dauernd reduziert und dauernd normal unterstützt meine Vitodens offenbar nicht:
   if ( mode < 0 || mode > 2 )
-    {
-#fffffffffffffffffffffffffffffffffffffffffffffffff
-// Fehlermeldungen hier gleich als String zurückgeben!
-      fprintf( stderr, "Illegal Mode!\n");
-      return -1;
-    }
-  
+    return "Illegal Mode!";
+
   content[0] = mode & 0xff; // unnötig, aber deutlicher
-  return vito_write(0x2323, 1, content);
+  if ( vito_write(0x2323, 1, content) < 0 )
+    return "Vitodens communication Error";
+  else
+    return "OK";
 }
 
 /* -------------------------------- */
@@ -122,7 +120,7 @@ const char * const read_errors( void )
       
       sprintf( cache + (4*i), "%03u,", vitomem[0] );
     }
-  cache[49]='\0'; //letztes Komma überschreiben
+  cache[39]='\0'; //letztes Komma überschreiben
 
   epilogue()
 }
@@ -141,6 +139,7 @@ const char * const read_errors_text( void )
   if ( strcmp( errors, "NULL" ) == 0 )
     return "NULL";
 
+  cache[0] = '\0';
   for ( i = 0; i <= 9; i++ ) // 10 Fehler
     {
       n_error = atoi(errors + (i*4));
@@ -209,20 +208,20 @@ const char * const read_ww_soll_temp( void)
 }
 
 /* -------------------------------- */
-int write_ww_soll_temp( char *value_str )
+const char * const write_ww_soll_temp( const char *value_str )
 {
   uint8_t content[3];
   int temp;
   
   temp = atoi( value_str );
   if ( temp < 5 || temp > 60 )
-    {
-      fprintf( stderr, "WW_soll_temp: range exceeded!\n");
-      return -1;
-    }
-  
+    return "WW_soll_temp: range exceeded!";
+
   content[0] = temp & 0xff; // unnötig, aber deutlicher
-  return vito_write(0x6300, 1, content);
+  if ( vito_write(0x6300, 1, content) < 0 )
+    return "Vitodens communication Error";
+  else
+    return "OK";
 }
 
 /* -------------------------------- */
@@ -434,7 +433,7 @@ const char * const read_raum_soll_temp( void )
 }
 
 /* -------------------------------- */
-int write_raum_soll_temp( char *value_str )
+const char * const write_raum_soll_temp( const char *value_str )
 {
   uint8_t content[3];
   int temp;
@@ -442,13 +441,13 @@ int write_raum_soll_temp( char *value_str )
   temp = atoi( value_str );
   
   if ( temp < 10 || temp > 30 )
-    {
-      fprintf( stderr, "Raum_soll_temp: range exceeded!\n");
-      return -1;
-    }
+    return "Raum_soll_temp: range exceeded!";
   
   content[0] = temp & 0xff; // unnötig, aber deutlicher
-  return vito_write(0x2306, 1, content);
+  if ( vito_write(0x2306, 1, content) < 0 )
+    return "Vitodens communication Error";
+  else
+    return "OK";
 }
 
 /* -------------------------------- */
@@ -463,7 +462,7 @@ const char * const read_red_raum_soll_temp( void )
 }
 
 /* -------------------------------- */
-int write_red_raum_soll_temp( char *value_str )
+const char * const write_red_raum_soll_temp( const char *value_str )
 {
   uint8_t content[3];
   int temp;
@@ -471,13 +470,13 @@ int write_red_raum_soll_temp( char *value_str )
   temp = atoi( value_str );
   
   if ( temp < 10 || temp > 30 )
-    {
-      fprintf( stderr, "Raum_soll_temp: range exceeded!\n");
-      return -1;
-    }
+    return "Raum_soll_temp: range exceeded!";
   
   content[0] = temp & 0xff; // unnötig, aber deutlicher
-  return vito_write(0x2307, 1, content);
+  if ( vito_write(0x2307, 1, content) < 0 )
+    return "Vitodens communication Error";
+  else
+    return "OK";
 }
 
 /* -------------------------------- */
@@ -576,21 +575,16 @@ const char * const get_u( const char *name )
 }
 
 // Parameterwert setzen
-char * set_v( char*name, char *value )
+const char * const set_v( const char *name, const char *value )
 {
   int i=0;
   
-    while( parameter_liste[i].p_name[0] ) // Ende der Liste ?
+  while( parameter_liste[i].p_name[0] ) // Ende der Liste ?
     {
       if ( strcmp( name, parameter_liste[i].p_name ) == 0 ) // Parametername gefunden?
 	{
 	  if ( parameter_liste[i].f_write ) // Gibts eine Schreibfunktion?
-	    {
-	      if ( parameter_liste[i].f_write( value ) < 0 )
-		return "Error setting Parameter!";
-	      else
-		return "Ok.";
-	    }
+	      return parameter_liste[i].f_write( value );
 	  else
 	    return "Read only!";
 	}
