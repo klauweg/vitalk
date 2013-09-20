@@ -95,14 +95,17 @@ int main(int argc, char **argv)
       read_fds = master_fds;
       
       if ( select ( MAX_DESCRIPTOR+1, &read_fds, NULL, NULL, timeout ) > 0 )  // SELECT
+	{
 	  telnet_task();
-
+	}
+      
       // Nach einer gewissen Zeit der Inaktivität wird das 300er Protokoll
       // anscheinend wieder deaktiviert. (ca. nach 10 minuten)
       // Daher haben wir hier eine Keepalive-Funktion:
       if ( time(NULL) - vito_keepalive > 500 )
 	{
-	  fprintf( stdout, "Keepalive: %s\n", get_v("deviceid") );
+	  //fprintf( stdout, "Keepalive: %s\n", get_v("deviceid") );
+	  get_v("deviceid");
 	}
     }
 }
