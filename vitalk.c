@@ -16,7 +16,7 @@
 #define VITOCOM
 
 // Global:
-fd_set master_fds;  // Aktive Filedeskriptoren für select()
+fd_set master_fds;  // Aktive Filedeskriptoren fuer select()
 fd_set read_fds;    // Ergebnis des select() - Aufrufs
 
 // Signal Handler:
@@ -38,7 +38,7 @@ int main(int argc, char **argv)
   int c; 
   // Diverse Options:
   char *tty_devicename = NULL;
-  // Struktur für select() timeout
+  // Struktur fuer select() timeout
   struct timeval *timeout = (struct timeval *) malloc( sizeof(struct timeval) );
   
   // Option processing with GNU getopt
@@ -82,7 +82,7 @@ int main(int argc, char **argv)
   vito_init();
 #endif
   
-  // Das machen wir sicherheitshalber erst nach vito_init(), für den Fall dass
+  // Das machen wir sicherheitshalber erst nach vito_init(), fuer den Fall dass
   // ein client sehr schnell ist:
   telnet_init();
 
@@ -99,7 +99,7 @@ int main(int argc, char **argv)
 	  telnet_task();
 	}
       
-      // Nach einer gewissen Zeit der Inaktivität wird das 300er Protokoll
+      // Nach einer gewissen Zeit der Inaktivitaet wird das 300er Protokoll
       // anscheinend wieder deaktiviert. (ca. nach 10 minuten)
       // Daher haben wir hier eine Keepalive-Funktion:
       if ( time(NULL) - vito_keepalive > 500 )

@@ -10,18 +10,18 @@
 #include <stdint.h>
 #include "vito_io.h"
 
-// Maximal zulässige aufeinanderfolgende Übertragungsfehler bevor ein
+// Maximal zulaessige aufeinanderfolgende Uebertragungsfehler bevor ein
 // Programmabbruch erfolgt:
 #define MAX_ERRORS 3
 
 // Globals:
 static int fd_tty = 0; // Filedescriptor serielle Schnittstelle
-static int errorcount = 0; // Abbruch bei zu häufigen Fehlern
+static int errorcount = 0; // Abbruch bei zu haeufigen Fehlern
 int frame_debug = 0; // Ausgabe der Framedaten als hex auf stderr wenn =1
 time_t vito_keepalive = 0; // Zeit des letzten Zugriff in vito_meeting()
 
-// Öffnen der seriellen Schnittstelle:
-// Keine Rückgabewerte. Wenns nicht geht wird sowieso beendet:
+// Oeffnen der seriellen Schnittstelle:
+// Keine Rueckgabewerte. Wenns nicht geht wird sowieso beendet:
 void opentty(char *device)
 {
    struct termios my_termios;
@@ -66,14 +66,14 @@ void opentty(char *device)
      }
 }
 
-// Serielle schnittstelle schließen
+// Serielle schnittstelle schliessen
 void closetty( void )
 {
   fprintf( stderr, "Closing Serial Device.\n" );
   close( fd_tty );
 }
 
-// Keine Rückgabewerte. Wenns nicht geht wird sowieso beendet:
+// Keine Rueckgabewerte. Wenns nicht geht wird sowieso beendet:
 // Initialisieren des 300 Protokolls:
 void vito_init( void )
 {
@@ -116,23 +116,23 @@ void vito_init( void )
    fprintf( stderr, "Success.\n");
 }
 
-// Zurückschalten ins KW Protokoll:
+// Zurueckschalten ins KW Protokoll:
 void vito_close( void )
 {
   const uint8_t initKw[] = { 0x04 };
 
   fprintf( stderr, "Switch Vitodens to KW Protokoll.\n");
   // Hier etwas unklar wie man sich verhalten soll wenn der
-  // Abbruch mitten in einer Telegrammübertragung erfolgt.
+  // Abbruch mitten in einer Telegrammuebertragung erfolgt.
   // Etwas warten kann jedenfalls nicht schaden.
-  // Bis jetzt hat das immer recht zuverlässig funktioniert.
+  // Bis jetzt hat das immer recht zuverlaessig funktioniert.
   write( fd_tty, initKw, 1 );
 }
 
 // 8-bit CRC Berechnung
-// Übergeben wird ein komplettes Frame einschließlich Startbyte
-// (0x41). Das Startbyte wird aber nicht für die CRC Berechnung berücksichtigt.
-// Rückgabewert: 8-bit CRC
+// Uebergeben wird ein komplettes Frame einschliesslich Startbyte
+// (0x41). Das Startbyte wird aber nicht fuer die CRC Berechnung beruecksichtigt.
+// Rueckgabewert: 8-bit CRC
 static uint8_t calcCRC( uint8_t *buffer )
 {
   int crc = 0;
@@ -159,11 +159,11 @@ static void print_hex( uint8_t *buffer, int len )
 // Es wird pro Aufruf immer ein Telegramm gesendet und eines empfangen.
 // Dabei kann es sich um Schreib- oder Lesezugriffe handeln. Diese Funktion
 // wird aber von den Nutzdaten bestimmt.
-// Als rx_data und tx_data werden reine Nutzdaten übergeben ohne
-// das Telegrammlängenfeld und die CRC Prüfsumme.
-// tx_data_len und rx_data_len sind Payloadlängen! Keine Speicherbereichsgrößen
+// Als rx_data und tx_data werden reine Nutzdaten uebergeben ohne
+// das Telegrammlaengenfeld und die CRC Pruefsumme.
+// tx_data_len und rx_data_len sind Payloadlaengen! Keine Speicherbereichsgroessen
 // des Regelungsadressraumes!
-// Rückgabewert: rx_data_len ( = -1 im Fehlerfall)
+// Rueckgabewert: rx_data_len ( = -1 im Fehlerfall)
 static int vito_meeting( uint8_t *tx_data, int tx_data_len, uint8_t *rx_data )
 {
   uint8_t buffer[200];
@@ -173,14 +173,14 @@ static int vito_meeting( uint8_t *tx_data, int tx_data_len, uint8_t *rx_data )
   
   if ( tx_data_len > 100 )
     { // Das sollte ja eigentlich nicht vorkommen, aber sicher ist sicher,
-      // denn das Datenfeld im Telegramm für die Payload-Länge hat ja auch nur 8 bit!
+      // denn das Datenfeld im Telegramm fuer die Payload-Laenge hat ja auch nur 8 bit!
       fprintf( stderr, "TX: Payload too large!\n" );
       exit( 1 );
     }
   
   // Construct TX Frame:
   buffer[0] = 0x41;     // Start of Frame
-  buffer[1] = tx_data_len;  // Länge der Nutzdaten eintragen
+  buffer[1] = tx_data_len;  // Laenge der Nutzdaten eintragen
   memcpy( &buffer[2], tx_data, tx_data_len ); // Nutzdaten kopieren
   buffer[tx_data_len+2] = calcCRC( buffer ); // CRC berechnen
 
@@ -234,7 +234,7 @@ static int vito_meeting( uint8_t *tx_data, int tx_data_len, uint8_t *rx_data )
       return -1;
     }
   
-  // Telegrammlänge empfangen:
+  // Telegrammlaenge empfangen:
   if ( read( fd_tty, &buffer[1], 1 ) < 1 )
     { // Timeout
       fprintf( stderr, "RCVD No Frame Size!\n" );
@@ -258,7 +258,7 @@ static int vito_meeting( uint8_t *tx_data, int tx_data_len, uint8_t *rx_data )
       print_hex( buffer, rx_data_len + 3 );
     }
   
-  // CRC prüfen
+  // CRC pruefen
   if ( calcCRC(buffer) != buffer[rx_data_len + 2] )
     {
       fprintf( stderr, "Bad CRC on RX: " );
@@ -275,10 +275,10 @@ static int vito_meeting( uint8_t *tx_data, int tx_data_len, uint8_t *rx_data )
     
 
 // Speicherbereich von Vitodens lesen:
-// Übergeben werden Addresse und Größe des zu lesenden
+// Uebergeben werden Addresse und Groesse des zu lesenden
 // Speicherbereichs aus der Regelung sowie ein Pointer
 // auf die Zieladresse im Speicher:
-// Rückgabewert: -1 = Fehler
+// Rueckgabewert: -1 = Fehler
 //                0 = OK
 int vito_read( int location, int size, uint8_t *vitomem )
 {
@@ -294,12 +294,12 @@ int vito_read( int location, int size, uint8_t *vitomem )
   command[3] = location & 0xff; // low byte
   command[4] = size;    // Anzahl der angeforderten Bytes
 
-  // Anfrage ausführen:
+  // Anfrage ausfuehren:
   result_len = vito_meeting( command, 5, result );
 
   flag = 0;
   
-  // Fehler von der vito_meeting() Funktion übernehmen:
+  // Fehler von der vito_meeting() Funktion uebernehmen:
   if ( result_len < 0 )
     {
       fprintf( stderr, "READ: failed. (error in meeting)\n" );
@@ -307,7 +307,7 @@ int vito_read( int location, int size, uint8_t *vitomem )
     }
   else
     {
-      // Wir untersuchen die empfangene Payload auf plausibilität:
+      // Wir untersuchen die empfangene Payload auf plausibilitaet:
       if ( result_len != 5 + size)
 	{
 	  fprintf( stderr, "READ: Wrong RCVD Payload length!\n" );
@@ -357,10 +357,10 @@ int vito_read( int location, int size, uint8_t *vitomem )
 }
 
 // Speicherbereich an Vitodens schreiben:
-// Übergeben werden Addresse und Größe des zu schreibenden
+// Uebergeben werden Addresse und Groesse des zu schreibenden
 // Speicherbereichs in der Regelung sowie ein Pointer
 // auf die Quelladresse im Speicher:
-// Rückgabewert: -1 = Fehler
+// Rueckgabewert: -1 = Fehler
 //                0 = OK
 int vito_write( int location, int size, uint8_t *vitomem )
 {
@@ -377,7 +377,7 @@ int vito_write( int location, int size, uint8_t *vitomem )
   command[4] = size;    // Anzahl der zu schreibenden Bytes
   memcpy( &command[5], vitomem, size );
   
-  // Anfrage ausführen:
+  // Anfrage ausfuehren:
   result_len = vito_meeting( command, 5 + size, result );
   
   flag = 0;
@@ -390,7 +390,7 @@ int vito_write( int location, int size, uint8_t *vitomem )
     }
   else
     {
-      // Wir untersuchen die empfangene Payload auf Plausibilität:
+      // Wir untersuchen die empfangene Payload auf Plausibilitaet:
       if ( result_len != 5 )
 	{
 	  fprintf( stderr, "WRITE: Wrong RCVD Payload length!\n" );

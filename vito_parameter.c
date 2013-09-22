@@ -34,9 +34,9 @@
 // OBACHT:
 // wenn in den vito_read() Aufrufen der Parameterfunktionen ein
 // Fehler auftritt (-1), muss gleich mit return beendet werden,
-// damit old_time=new_time nicht erreicht wird und beim nächsten
+// damit old_time=new_time nicht erreicht wird und beim naechsten
 // Aufruf ein fehlerhafter Wert aus dem Cache statt einem Fehler
-// zurückgegeben wird.
+// zurueckgegeben wird.
 
 ////////////////////////// PARAMETERFUNKTIONEN ////////////////////
 
@@ -72,11 +72,11 @@ const char * const write_mode( const char * value_str )
   int mode;
   
   mode = atoi( value_str );
-  // Dauernd reduziert und dauernd normal unterstützt meine Vitodens offenbar nicht:
+  // Dauernd reduziert und dauernd normal unterstuetzt meine Vitodens offenbar nicht:
   if ( mode < 0 || mode > 2 )
     return "Illegal Mode!";
 
-  content[0] = mode & 0xff; // unnötig, aber deutlicher
+  content[0] = mode & 0xff; // unnoetig, aber deutlicher
   if ( vito_write(0x2323, 1, content) < 0 )
     return "Vitodens communication Error";
   else
@@ -120,13 +120,13 @@ const char * const read_errors( void )
       
       sprintf( cache + (4*i), "%03u,", vitomem[0] );
     }
-  cache[39]='\0'; //letztes Komma überschreiben
+  cache[39]='\0'; //letztes Komma ueberschreiben
 
   epilogue()
 }
 
 /* -------------------------------- */
-// Die 10 Fehlerspeicherplätze als Textstrings zurückgeben:
+// Die 10 Fehlerspeicherplaetze als Textstrings zurueckgeben:
 const char * const read_errors_text( void )
 {
   static char cache[80*10];
@@ -217,7 +217,7 @@ const char * const write_ww_soll_temp( const char *value_str )
   if ( temp < 5 || temp > 60 )
     return "WW_soll_temp: range exceeded!";
 
-  content[0] = temp & 0xff; // unnötig, aber deutlicher
+  content[0] = temp & 0xff; // unnoetig, aber deutlicher
   if ( vito_write(0x6300, 1, content) < 0 )
     return "Vitodens communication Error";
   else
@@ -443,7 +443,7 @@ const char * const write_raum_soll_temp( const char *value_str )
   if ( temp < 10 || temp > 30 )
     return "Raum_soll_temp: range exceeded!";
   
-  content[0] = temp & 0xff; // unnötig, aber deutlicher
+  content[0] = temp & 0xff; // unnoetig, aber deutlicher
   if ( vito_write(0x2306, 1, content) < 0 )
     return "Vitodens communication Error";
   else
@@ -472,7 +472,7 @@ const char * const write_red_raum_soll_temp( const char *value_str )
   if ( temp < 10 || temp > 30 )
     return "Raum_soll_temp: range exceeded!";
   
-  content[0] = temp & 0xff; // unnötig, aber deutlicher
+  content[0] = temp & 0xff; // unnoetig, aber deutlicher
   if ( vito_write(0x2307, 1, content) < 0 )
     return "Vitodens communication Error";
   else
@@ -502,24 +502,29 @@ const char * const read_niveau( void )
 }
 
 //////////////////////////////////////////////////////////////////////////
-// obacht: maximale Befehlslänge 20 Zeichen, sonst klemmt der telnet-parser
+// obacht: maximale Befehlslaenge 20 Zeichen, sonst klemmt der telnet-parser
 const struct s_parameter parameter_liste[] = {
   { "errors", "Error History (numerisch)", "", P_ERRORS, &read_errors, NULL },
   { "errors_text", "Error History (text)", "", P_ERRORS, &read_errors_text, NULL },
   { "deviceid", "Geraeteidentifikation", "", P_ALLGEMEIN, &read_deviceid, NULL },
   { "mode", "Betriebsmodus (numerisch)", "", P_ALLGEMEIN, &read_mode, &write_mode },
   { "mode_text", "Betriebsmodus (text)", "", P_ALLGEMEIN, &read_mode_text, NULL },
-  { "outdoor_temp", "Aussentemperatur", "°C", P_ALLGEMEIN, &read_outdoor_temp, NULL },
-  { "outdoor_temp_tp", "Aussentemperatur Tiefpass", "°C", P_ALLGEMEIN, &read_outdoor_temp_tp, NULL },
-  { "outdoor_temp_smooth", "Aussentemperatur Gedämpft", "°C", P_ALLGEMEIN, &read_outdoor_temp_smooth, NULL },
-  { "k_ist_temp", "Kessel Ist Temperatur", "°C", P_KESSEL, &read_k_ist_temp, NULL },
-  { "k_ist_temp_tp", "Kessel Ist T. nach Tiefpass", "°C", P_KESSEL, &read_k_ist_temp_tp, NULL },
-  { "k_soll_temp", "Kessel Soll Temperatur", "°C", P_KESSEL, &read_k_soll_temp, NULL },
-  { "k_abgas_temp", "Kessel Abgastemperatur", "°C", P_KESSEL, &read_abgas_temp, NULL },
-  { "ww_soll_temp", "Warmwasser Soll Temperatur", "°C", P_WARMWASSER, &read_ww_soll_temp, &write_ww_soll_temp },
-  { "ww_ist_temp", "Warmwasser Ist Temperatur", "°C", P_WARMWASSER, &read_ww_ist_temp, NULL },
-  { "ww_ist_temp_tp", "Warmwasser Ist Temp. Tiefpass", "°C", P_WARMWASSER, &read_ww_ist_temp_tp, NULL },
+  { "outdoor_temp", "Aussentemperatur", "oC", P_ALLGEMEIN, &read_outdoor_temp, NULL },
+  { "outdoor_temp_tp", "Aussentemperatur Tiefpass", "oC", P_ALLGEMEIN, &read_outdoor_temp_tp, NULL },
+  { "outdoor_temp_smooth", "Aussentemperatur Gedaempft", "oC", P_ALLGEMEIN, &read_outdoor_temp_smooth, NULL },
+  { "k_ist_temp", "Kessel Ist Temperatur", "oC", P_KESSEL, &read_k_ist_temp, NULL },
+  { "k_ist_temp_tp", "Kessel Ist T. nach Tiefpass", "oC", P_KESSEL, &read_k_ist_temp_tp, NULL },
+  { "k_soll_temp", "Kessel Soll Temperatur", "oC", P_KESSEL, &read_k_soll_temp, NULL },
+  { "k_abgas_temp", "Kessel Abgastemperatur", "oC", P_KESSEL, &read_abgas_temp, NULL },
+  { "ww_soll_temp", "Warmwasser Soll Temperatur", "oC", P_WARMWASSER, &read_ww_soll_temp, &write_ww_soll_temp },
+  { "ww_ist_temp", "Warmwasser Ist Temperatur", "oC", P_WARMWASSER, &read_ww_ist_temp, NULL },
+  { "ww_ist_temp_tp", "Warmwasser Ist Temp. Tiefpass", "oC", P_WARMWASSER, &read_ww_ist_temp_tp, NULL },
   { "ww_offset", "Offset Kessel/WW Soll", "K", P_WARMWASSER, &read_ww_offset, NULL },
+  { "vl_soll_temp", "Vorlauf Solltemperatur", "oC", P_HEIZKREIS, &read_vl_soll_temp, NULL },
+  { "raum_soll_temp", "Raum Solltemperatur", "oC", P_HEIZKREIS, &read_raum_soll_temp, &write_raum_soll_temp },
+  { "red_raum_soll_temp", "Reduzierte Raum Solltemperatur", "oC", P_HEIZKREIS, &read_red_raum_soll_temp, &write_red_raum_soll_temp },
+  { "niveau", "Heizkurve Niveau", "K", P_HEIZKREIS, &read_niveau, NULL },
+  { "neigung", "Heizkurve Neigung", "", P_HEIZKREIS, &read_neigung, NULL },
   { "starts", "Brennerstarts", "", P_BRENNER, &read_starts, NULL },
   { "runtime_h", "Brennerlaufzeit", "h", P_BRENNER, &read_runtime_h, NULL },
   { "runtime", "Brennerlaufzeit", "s", P_BRENNER, &read_runtime, NULL },
@@ -528,11 +533,6 @@ const struct s_parameter parameter_liste[] = {
   { "ventil_text", "Ventilstellung", "", P_HYDRAULIK, &read_ventil_text, NULL },
   { "pump_power", "Pumpenleistung", "%", P_HYDRAULIK, &read_pump_power, NULL },
   { "flow", "Volumenstrom", "l/h", P_HYDRAULIK, &read_flow, NULL },
-  { "vl_soll_temp", "Vorlauf Solltemperatur", "°C", P_HEIZKREIS, &read_vl_soll_temp, NULL },
-  { "raum_soll_temp", "Raum Solltemperatur", "°C", P_HEIZKREIS, &read_raum_soll_temp, &write_raum_soll_temp },
-  { "red_raum_soll_temp", "Reduzierte Raum Solltemperatur", "°C", P_HEIZKREIS, &read_red_raum_soll_temp, &write_red_raum_soll_temp },
-  { "niveau", "Heizkurve Niveau", "K", P_HEIZKREIS, &read_niveau, NULL },
-  { "neigung", "Heizkurve Neigung", "", P_HEIZKREIS, &read_neigung, NULL },
   { "", "", "", 0, NULL, NULL }
 };
 
@@ -558,7 +558,7 @@ const char * const get_v( const char *name )
   return "Parameter not found.";
 }
 
-// Einheit für Parameter nachschlagen
+// Einheit fuer Parameter nachschlagen
 const char * const get_u( const char *name )
 {
   int i=0;

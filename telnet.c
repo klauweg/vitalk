@@ -38,16 +38,26 @@ static void print_help( int fd )
   dprintf(fd,
 	  "Short Help Text:\n"
 	  "  h, help                 - This Help Text\n"
+	  "  frame_debug <on/off>    - Set state of Frame Debugging\n"
 	  "  list [class]            - Show parameter List\n"
 	  "  g, get <p_name>         - Query Parameter\n"
+	  "  gvu <p_name>            - Get Value of Parameter with Unit\n"
 	  "  s, set <p_name> <value> - Set Parameter\n"
 	  "  gc <class>              - Query a class of Parameters\n"
-	  "  gvu <p_name>            - Get Value of Parameter with Unit\n"
-	  "  frame_debug <on/off>    - Set state of Frame Debugging\n"
+	  "     Parameterklassen:\n"
+	  "       P_ALLE       0\n"
+	  "       P_ERRORS     1\n"
+	  "       P_ALLGEMEIN  2\n"
+	  "       P_KESSEL     3\n"
+	  "       P_WARMWASSER 4\n"
+	  "       P_HEIZKREIS  5\n"
+	  "       P_BRENNER    6\n"
+	  "       P_HYDRAULIK  7\n"
 	  "\n"
     );
 }
 
+// Parameterklasse abfragen:
 static void get_class( int fd, int p_class )
 {
   int i=0;
@@ -96,7 +106,7 @@ void telnet_init( void )
     }
 
   // Set REUSEADDR option
-  // Sonst kann man nach einem Programmabbruch längere Zeit nicht neu starten:
+  // Sonst kann man nach einem Programmabbruch laengere Zeit nicht neu starten:
   const int optVal = 1;
   if ( setsockopt(fd_listener, SOL_SOCKET, SO_REUSEADDR, (void*) &optVal, sizeof(int)) == -1 )
     {
@@ -130,8 +140,8 @@ void telnet_init( void )
   FD_SET(fd_listener, &master_fds);
 }
 
-// Folgende Funktion wird periodisch nach der select() Rückkehr aufgerufen.
-// Es muss die von select() zurückgegebene Descriptormenge übergeben werden:
+// Folgende Funktion wird periodisch nach der select() Rueckkehr aufgerufen.
+// Es muss die von select() zurueckgegebene Descriptormenge uebergeben werden:
 void telnet_task( void )
 {
   int i;
@@ -196,7 +206,7 @@ void telnet_task( void )
 		      
 		      // Empty socket input buffer:
 		      while ( recv(i, buffers[i], TELNET_BUFFER_SIZE, MSG_DONTWAIT ) > 0);
-		      buf_ptr[i] = 0; // Für die nächste Pufferfüllung
+		      buf_ptr[i] = 0; // Fuer die naechste Pufferfuellung
 			      
 		      // Suche nach bekanntem Befehl:
 		      for ( cnum=0; commands[cnum][0]; cnum++ ) 
