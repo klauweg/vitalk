@@ -204,8 +204,6 @@ void telnet_task( void )
 
 		      sscanf( buffers[i], "%20s %20s %20s %*s\n", command, value1, value2 );
 		      
-		      // Empty socket input buffer:
-		      while ( recv(i, buffers[i], TELNET_BUFFER_SIZE, MSG_DONTWAIT ) > 0);
 		      buf_ptr[i] = 0; // Fuer die naechste Pufferfuellung
 			      
 		      // Suche nach bekanntem Befehl:
