@@ -533,7 +533,7 @@ const struct s_parameter parameter_liste[] = {
   { "ventil_text", "Ventilstellung", "", P_HYDRAULIK, &read_ventil_text, NULL },
   { "pump_power", "Pumpenleistung", "%", P_HYDRAULIK, &read_pump_power, NULL },
   { "flow", "Volumenstrom", "l/h", P_HYDRAULIK, &read_flow, NULL },
-  { "", "", "", 0, NULL, NULL }
+  { NULL, NULL, NULL, 0, NULL, NULL }
 };
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -543,7 +543,7 @@ const char * const get_v( const char *name )
 {
   int i=0;
   
-  while( parameter_liste[i].p_name[0] ) // Ende der Liste ?
+  while( parameter_liste[i].p_name ) // Ende der Liste ?
     {
       if ( strcmp( name, parameter_liste[i].p_name ) == 0 ) // Parametername gefunden?
 	{
@@ -563,7 +563,7 @@ const char * const get_u( const char *name )
 {
   int i=0;
   
-  while( parameter_liste[i].p_name[0] ) // Ende der Liste
+  while( parameter_liste[i].p_name ) // Ende der Liste
     {
       if ( strcmp( name, parameter_liste[i].p_name ) == 0 ) // Parametername gefunden?
 	return parameter_liste[i].p_einheit;
@@ -579,7 +579,7 @@ const char * const set_v( const char *name, const char *value )
 {
   int i=0;
   
-  while( parameter_liste[i].p_name[0] ) // Ende der Liste ?
+  while( parameter_liste[i].p_name ) // Ende der Liste ?
     {
       if ( strcmp( name, parameter_liste[i].p_name ) == 0 ) // Parametername gefunden?
 	{
