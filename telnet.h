@@ -1,6 +1,6 @@
 
 #define PORT 83
-#define MAX_DESCRIPTOR 7
+#define MAX_DESCRIPTOR 20
 #define TELNET_BUFFER_SIZE 80
 
 // Prototypes:
