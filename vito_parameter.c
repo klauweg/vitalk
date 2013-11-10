@@ -266,7 +266,7 @@ const char * const read_outdoor_temp_tp( void )
   prologue()
     if ( vito_read( 0x5525, 2, vitomem) < 0 )
       return "NULL";
-  sprintf( cache, "%3.2f", ( vitomem[0] + (vitomem[1] << 8)) / 10.0 );
+  sprintf( cache, "%3.2f", ((int16_t)( vitomem[0] + (vitomem[1] << 8))) / 10.0 );
   epilogue()
 }
 
@@ -277,7 +277,7 @@ const char * const read_outdoor_temp_smooth( void )
   prologue()
     if ( vito_read( 0x5527, 2, vitomem) < 0 )
       return "NULL";
-  sprintf( cache, "%3.2f", ( vitomem[0] + (vitomem[1] << 8)) / 10.0 );
+  sprintf( cache, "%3.2f", ((int16_t)( vitomem[0] + (vitomem[1] << 8))) / 10.0 );
   epilogue()
 }
 
@@ -288,7 +288,7 @@ const char * const read_outdoor_temp( void )
   prologue()
     if ( vito_read( 0x0800, 2, vitomem) < 0 )
       return "NULL";
-  sprintf( cache, "%3.2f", ( vitomem[0] + (vitomem[1] << 8)) / 10.0 );
+  sprintf( cache, "%3.2f", ((int16_t)( vitomem[0] + (vitomem[1] << 8))) / 10.0 );
   epilogue()
 }
 
