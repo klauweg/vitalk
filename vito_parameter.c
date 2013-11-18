@@ -501,6 +501,64 @@ const char * const read_niveau( void )
   epilogue()
 }
 
+/* -------------------------------- */
+const char * const read_pp_max( void )
+{
+  static char cache[5];
+  prologue()
+    if ( vito_read( 0x27e6, 1, vitomem) < 0 )
+      return "NULL";
+  sprintf( cache, "%u", vitomem[0] );
+  epilogue()
+}
+
+/* -------------------------------- */
+const char * const write_pp_max( const char *value_str )
+{
+  uint8_t content[3];
+  int temp;
+  
+  temp = atoi( value_str );
+  
+  if ( temp < 0 || temp > 100 )
+    return "Max. Pumpenleistung: range exceeded!";
+  
+  content[0] = temp & 0xff; // unnoetig, aber deutlicher
+  if ( vito_write(0x27e6, 1, content) < 0 )
+    return "Vitodens communication Error";
+  else
+    return "OK";
+}
+
+/* -------------------------------- */
+const char * const read_pp_min( void )
+{
+  static char cache[5];
+  prologue()
+    if ( vito_read( 0x27e7, 1, vitomem) < 0 )
+      return "NULL";
+  sprintf( cache, "%u", vitomem[0] );
+  epilogue()
+}
+
+/* -------------------------------- */
+const char * const write_pp_min( const char *value_str )
+{
+  uint8_t content[3];
+  int temp;
+  
+  temp = atoi( value_str );
+  
+  if ( temp < 0 || temp > 100 )
+    return "Min. Pumpenleistung: range exceeded!";
+  
+  content[0] = temp & 0xff; // unnoetig, aber deutlicher
+  if ( vito_write(0x27e7, 1, content) < 0 )
+    return "Vitodens communication Error";
+  else
+    return "OK";
+}
+
 //////////////////////////////////////////////////////////////////////////
 // obacht: maximale Befehlslaenge 20 Zeichen, sonst klemmt der telnet-parser
 const struct s_parameter parameter_liste[] = {
@@ -525,6 +583,8 @@ const struct s_parameter parameter_liste[] = {
   { "red_raum_soll_temp", "Reduzierte Raum Solltemperatur", "oC", P_HEIZKREIS, &read_red_raum_soll_temp, &write_red_raum_soll_temp },
   { "niveau", "Heizkurve Niveau", "K", P_HEIZKREIS, &read_niveau, NULL },
   { "neigung", "Heizkurve Neigung", "", P_HEIZKREIS, &read_neigung, NULL },
+  { "pp_max", "Pumpenleistung Maximal", "%", P_HEIZKREIS, &read_pp_max, &write_pp_max },
+  { "pp_min", "Pumpenleistung Minimal", "%", P_HEIZKREIS, &read_pp_min, &write_pp_min },
   { "starts", "Brennerstarts", "", P_BRENNER, &read_starts, NULL },
   { "runtime_h", "Brennerlaufzeit", "h", P_BRENNER, &read_runtime_h, NULL },
   { "runtime", "Brennerlaufzeit", "s", P_BRENNER, &read_runtime, NULL },
