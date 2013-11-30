@@ -77,6 +77,10 @@ int main(int argc, char **argv)
   signal(SIGINT, exit_handler);
   signal(SIGHUP, exit_handler);
 
+  // to prevent dieing by writing to closed sockets
+  //    // -> We handle this locally
+  signal(SIGPIPE, SIG_IGN);
+
 #ifdef VITOCOM
   opentty( tty_devicename );
   vito_init();
