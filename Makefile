@@ -3,5 +3,5 @@ vitalk: vitalk.c vito_io.c vito_io.h vito_parameter.c vito_parameter.h telnet.c 
 	    vitalk.c vito_io.c vito_parameter.c telnet.c
 
 copy:
-	scp *.c *.h Makefile root@heizung:Heizung/ViTalk/
+	scp *.c *.h Makefile *.sh root@heizung:Heizung/ViTalk/
 
